@@ -1,0 +1,20 @@
+{
+  "log_file": "logs/service_monitor.log",
+  "log_level": "INFO",
+  "targets": [
+    {
+      "name": "local-prometheus",
+      "method": "local",
+      "service": "prometheus.service",
+      "credentials": { 
+        "user": "monitorusr",
+        "password": "Maximo01@"
+       },
+      "recover_on_down": true,
+      "interval_sec": 10,
+      "recover_action": "restart",
+      "timeout_sec": 20,
+      "active" : true
+    }
+  ]
+}
