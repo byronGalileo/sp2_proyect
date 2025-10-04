@@ -1,0 +1,14 @@
+/monitor/config/config.json
+/monitor/config/config.local.json
+/monitor/logs/*
+.env
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MongoDB and database files
+*.db
