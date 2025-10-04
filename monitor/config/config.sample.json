@@ -1,6 +1,12 @@
 {
   "log_file": "logs/service_monitor.log",
   "log_level": "INFO",
+  "mongodb": {
+  "enabled": true,
+  "host": "localhost",
+  "port": 27017,
+  "database": "service_monitoring"
+  },
   "targets": [
     {
       "name": "local-nginx",

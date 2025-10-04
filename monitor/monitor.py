@@ -1,187 +1,125 @@
 #!/usr/bin/env python3
 """
-service-monitor: Monitor configurable de servicios systemd (local/SSH), con:
-- intervalos por servicio (interval_sec en cada target)
-- bandera booleana 'active' en los logs
-- posibilidad de habilitar/deshabilitar targets desde config (active: true/false)
-- intento de remediación (start/restart) sin sudo primero, con opción 'use_sudo' por target
+Service Monitor v2.0 - Modular service monitoring with MongoDB integration
+
+Features:
+- Modular architecture with separate components
+- MongoDB logging integration alongside traditional file logging
+- Configurable monitoring intervals per service
+- Local and SSH service monitoring
+- Automatic service remediation
+- Enhanced error handling and logging
+
+Usage:
+    python monitor.py --config config/config.json [--once]
+
+Configuration:
+    See config/config.example.json for configuration format
 """
+
 import argparse
-import json
-import logging
-from logging.handlers import RotatingFileHandler
-import subprocess
-import time
-import shlex
+import sys
 import os
 
-DEFAULT_LOG = "logs/service_monitor.log"
+# Add current directory to Python path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-def shell(cmd: str, timeout: int = 20) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+from core import ConfigLoader, ServiceMonitor, LoggerManager
 
-def systemctl_is_active_local(service: str) -> str:
-    cp = shell(f"systemctl is-active {shlex.quote(service)}")
-    # returncode: 0=active, 3=inactive/failed, otros=errores
-    return cp.stdout.strip() if cp.returncode in (0,3) else (cp.stdout.strip() or cp.stderr.strip())
-
-def systemctl_action_local(service: str, action: str, use_sudo: bool=False, user: str=None, password: str=None) -> subprocess.CompletedProcess:
-    action = "restart" if action == "restart" else "start"
-    
-    if user and password:
-        # Use su to switch to the specified user
-        cmd = f"echo {shlex.quote(password)} | su -c 'systemctl {action} {shlex.quote(service)}' {shlex.quote(user)}"
-    else:
-        base = "sudo systemctl" if use_sudo else "systemctl"
-        cmd = f"{base} {action} {shlex.quote(service)}"
-    
-    return shell(cmd)
-
-def systemctl_is_active_ssh(user: str, host: str, port: int, service: str) -> str:
-    cmd = f"ssh -p {port} -o BatchMode=yes -o StrictHostKeyChecking=accept-new {shlex.quote(user)}@{shlex.quote(host)} systemctl is-active {shlex.quote(service)}"
-    cp = shell(cmd)
-    return cp.stdout.strip() if cp.returncode in (0,3) else (cp.stdout.strip() or cp.stderr.strip())
-
-def systemctl_action_ssh(user: str, host: str, port: int, service: str, action: str, use_sudo: bool=False) -> subprocess.CompletedProcess:
-    action = "restart" if action == "restart" else "start"
-    base = "sudo systemctl" if use_sudo else "systemctl"
-    cmd = f"ssh -p {port} -o BatchMode=yes -o StrictHostKeyChecking=accept-new {shlex.quote(user)}@{shlex.quote(host)} {base} {shlex.quote(action)} {shlex.quote(service)}"
-    return shell(cmd)
-
-def setup_logger(log_path: str, level: str = "INFO") -> logging.Logger:
-    logger = logging.getLogger("service_monitor")
-    if logger.handlers:
-        return logger  # evita handlers duplicados
-    logger.setLevel(getattr(logging, level.upper(), logging.INFO))
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    handler = RotatingFileHandler(log_path, maxBytes=2*1024*1024, backupCount=5)
-    fmt = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler.setFormatter(fmt)
-    logger.addHandler(handler)
-    console = logging.StreamHandler()
-    console.setFormatter(fmt)
-    logger.addHandler(console)
-    return logger
-
-def monitor_target(logger: logging.Logger, target: dict) -> None:
-    enabled = target.get("active", True)
-    name = target.get("name") or f"{target.get('host','local')}:{target.get('service','?')}"
-    if not enabled:
-        logger.info(f"[{name}] skip=target_disabled")
-        return
-
-    method = target.get("method","local")
-    service = target["service"]
-    recover = target.get("recover_on_down", True)
-    recover_action = target.get("recover_action","start")  # start|restart
-    timeout = int(target.get("timeout_sec", 20))
-    use_sudo = bool(target.get("use_sudo", False))  # por si quieres forzar sudo explícitamente
-
-    # STATUS
-    try:
-        if method == "local":
-            status = systemctl_is_active_local(service)
-        elif method == "ssh":
-            ssh = target.get("ssh", {})
-            status = systemctl_is_active_ssh(
-                user=ssh.get("user",""),
-                host=target["host"],
-                port=int(ssh.get("port",22)),
-                service=service,
-            )
-        else:
-            logger.error(f"[{name}] método desconocido: {method}")
-            return
-        is_active = (status.strip() == "active")
-        logger.info(f"[{name}] status={status} active={is_active}")
-    except Exception as e:
-        logger.error(f"[{name}] error al consultar estado: {e}")
-        return
-
-    # REMEDIACIÓN
-    if not is_active:
-        if not recover:
-            logger.warning(f"[{name}] servicio no activo y recuperación deshabilitada")
-            return
-        logger.warning(f"[{name}] servicio '{service}' no está activo (status={status}). Intentando {recover_action}...")
-        try:
-            if method == "local":
-                # Get credentials if available
-                credentials = target.get("credentials", {})
-                user = credentials.get("user")
-                password = credentials.get("password")
-                
-                # First try with credentials if available, otherwise use sudo/no-sudo approach
-                if user and password:
-                    cp = systemctl_action_local(service, recover_action, use_sudo=False, user=user, password=password)
-                else:
-                    # Primero intenta sin sudo (Polkit). Si falla por permisos y use_sudo=True, reintenta con sudo.
-                    cp = systemctl_action_local(service, recover_action, use_sudo=False)
-                    if cp.returncode != 0 and "permission" in (cp.stderr.lower() + cp.stdout.lower()) and use_sudo:
-                        cp = systemctl_action_local(service, recover_action, use_sudo=True)
-            else:
-                ssh = target.get("ssh", {})
-                cp = systemctl_action_ssh(
-                    user=ssh.get("user",""),
-                    host=target["host"],
-                    port=int(ssh.get("port",22)),
-                    service=service,
-                    action=recover_action,
-                    use_sudo=use_sudo,
-                )
-            if cp.returncode == 0:
-                logger.info(f"[{name}] {recover_action} ejecutado correctamente")
-            else:
-                logger.error(f"[{name}] fallo en {recover_action} rc={cp.returncode} out={cp.stdout.strip()} err={cp.stderr.strip()}")
-        except Exception as e:
-            logger.error(f"[{name}] excepción al intentar {recover_action}: {e}")
+def create_example_config():
+    """Create example configuration file"""
+    config_path = "config/config.example.json"
+    print(f"Creating example configuration at {config_path}")
+    ConfigLoader.create_example_config(config_path)
+    print("Example configuration created. Copy it to your actual config file and modify as needed.")
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True, help="Ruta a config.json")
-    ap.add_argument("--once", action="store_true", help="Ejecuta una sola vez y sale")
-    args = ap.parse_args()
+    """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description="Service Monitor v2.0 - Modular service monitoring with MongoDB integration"
+    )
+    parser.add_argument(
+        "--config",
+        required=True,
+        help="Path to configuration JSON file"
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run monitoring once and exit (no continuous loop)"
+    )
+    parser.add_argument(
+        "--create-example",
+        action="store_true",
+        help="Create example configuration file and exit"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="Service Monitor v2.0"
+    )
 
-    with open(args.config, "r") as f:
-        cfg = json.load(f)
+    args = parser.parse_args()
 
-    log_path = cfg.get("log_file", DEFAULT_LOG)
-    logger = setup_logger(log_path, cfg.get("log_level","INFO"))
+    # Handle example config creation
+    if args.create_example:
+        create_example_config()
+        return 0
 
-    targets = cfg.get("targets", [])
-    if not targets:
-        logger.error("No hay 'targets' definidos en el archivo de configuración")
-        return
-
-    # Programación por target (cada uno con su interval_sec)
-    schedule = {}
-    now = time.time()
-    for t in targets:
-        schedule[id(t)] = now  # ejecutar inmediatamente
-
-    logger.info("Iniciando monitor con %s targets", len(targets))
-
-    def run_cycle():
-        now = time.time()
-        for t in targets:
-            interval = int(t.get("interval_sec", 60))
-            key = id(t)
-            next_at = schedule.get(key, now)
-            if now >= next_at:
-                monitor_target(logger, t)
-                schedule[key] = now + interval
-
-    if args.once:
-        for t in targets:
-            monitor_target(logger, t)
-        return
-
+    # Load and validate configuration
     try:
-        while True:
-            run_cycle()
-            time.sleep(1)
+        config = ConfigLoader.load(args.config)
+        print(f"✅ Configuration loaded: {len(config.targets)} targets found")
+    except Exception as e:
+        print(f"❌ Configuration error: {e}")
+        print(f"💡 Use --create-example to generate an example configuration")
+        return 1
+
+    # Initialize logging manager
+    try:
+        logger_manager = LoggerManager(
+            log_path=config.log_file,
+            log_level=config.log_level,
+            mongodb_config=config.mongodb
+        )
+        print(f"✅ Logger initialized (MongoDB: {'enabled' if logger_manager.mongodb_enabled else 'disabled'})")
+    except Exception as e:
+        print(f"❌ Logger initialization failed: {e}")
+        return 1
+
+    # Validate targets
+    active_targets = [t for t in config.targets if t.active]
+    if not active_targets:
+        logger_manager.log_configuration_error("No active targets found in configuration")
+        return 1
+
+    print(f"📊 Active targets: {len(active_targets)}/{len(config.targets)}")
+    for target in active_targets:
+        print(f"  - {target.name} ({target.method}): {target.service} [interval: {target.interval_sec}s]")
+
+    # Initialize service monitor
+    service_monitor = ServiceMonitor(logger_manager)
+
+    # Run monitoring
+    try:
+        if args.once:
+            print("🔍 Running single monitoring cycle...")
+            service_monitor.run_once(active_targets)
+            print("✅ Single monitoring cycle completed")
+        else:
+            print("🔄 Starting continuous monitoring (Ctrl+C to stop)...")
+            service_monitor.run_continuous(active_targets, sleep_interval=1)
+
     except KeyboardInterrupt:
-        logger.info("Terminando por Ctrl+C")
+        print("\n🛑 Monitoring stopped by user")
+        return 0
+    except Exception as e:
+        print(f"❌ Monitoring failed: {e}")
+        logger_manager.error(f"Critical error in monitoring loop: {e}")
+        return 1
+
+    return 0
 
 if __name__ == "__main__":
-    main()
+    exit_code = main()
+    sys.exit(exit_code)

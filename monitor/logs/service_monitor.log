@@ -561,3 +561,154 @@
 2025-09-11 22:45:53,465 INFO [local-my-sql] status=active active=True
 2025-09-11 22:46:03,480 INFO [local-my-sql] status=active active=True
 2025-09-11 22:46:03,491 INFO [local-prometheus] status=active active=True
+2025-09-12 00:06:27,574 INFO Iniciando monitor con 1 targets
+2025-09-12 00:06:28,954 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:07:14,347 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:07:59,794 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:08:45,303 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:09:30,709 INFO [jeju-my-sql] status=inactive active=False
+2025-09-12 00:09:30,709 WARNING [jeju-my-sql] servicio 'mysql.service' no está activo (status=inactive). Intentando restart...
+2025-09-12 00:09:32,140 ERROR [jeju-my-sql] fallo en restart rc=1 out= err=Failed to restart mysql.service: Interactive authentication required.
+See system logs and 'systemctl status mysql.service' for details.
+2025-09-12 00:10:16,754 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:02,158 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:21,003 INFO Iniciando monitor con 1 targets
+2025-09-12 00:11:22,385 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:27,772 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:33,149 INFO [jeju-my-sql] status=inactive active=False
+2025-09-12 00:11:33,149 WARNING [jeju-my-sql] servicio 'mysql.service' no está activo (status=inactive). Intentando restart...
+2025-09-12 00:11:35,584 INFO [jeju-my-sql] restart ejecutado correctamente
+2025-09-12 00:11:38,967 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:44,373 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:50,444 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:11:54,859 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:00,258 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:05,858 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:11,590 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:16,970 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:22,353 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:28,013 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:12:33,393 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:33:01,571 INFO Iniciando monitor con 1 targets
+2025-09-12 00:33:03,071 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:33:08,646 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:33:14,114 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:33:20,067 INFO [jeju-my-sql] status=active active=True
+2025-09-12 00:33:25,512 INFO [jeju-my-sql] status=active active=True
+2025-09-26 01:05:36,873 INFO MongoDB logging enabled and connected
+2025-09-26 01:05:36,879 ERROR [jeju-my-sql] hostname contains invalid characters
+2025-09-26 01:05:36,883 WARNING [jeju-my-sql] Cannot remediate due to status check error: hostname contains invalid characters
+2025-09-26 01:06:39,914 INFO MongoDB logging enabled and connected
+2025-09-26 01:06:39,922 INFO [local-test] status=active active=True
+2025-09-26 01:07:26,917 INFO MongoDB logging enabled and connected
+2025-09-26 01:07:26,917 INFO Starting monitor with 1 targets
+2025-09-26 01:07:26,926 INFO [local-test] status=active active=True
+2025-09-26 01:07:36,934 INFO [local-test] status=active active=True
+2025-09-26 01:13:56,129 INFO MongoDB logging enabled and connected
+2025-09-26 01:13:56,135 INFO [local-test] status=active active=True
+2025-09-26 01:14:09,897 INFO MongoDB logging enabled and connected
+2025-09-26 01:14:09,903 INFO [local-test] status=active active=True
+2025-09-26 01:15:37,155 INFO MongoDB logging enabled and connected
+2025-09-26 01:15:37,155 INFO Starting monitor with 1 targets
+2025-09-26 01:15:37,168 INFO [local-test] status=active active=True
+2025-09-26 01:15:47,176 INFO [local-test] status=active active=True
+2025-09-26 01:15:57,189 INFO [local-test] status=active active=True
+2025-09-26 01:16:07,204 INFO [local-test] status=active active=True
+2025-09-26 01:16:17,238 INFO [local-test] status=active active=True
+2025-09-26 01:16:27,254 INFO [local-test] status=active active=True
+2025-09-26 01:16:37,267 INFO [local-test] status=active active=True
+2025-09-26 01:16:47,301 INFO [local-test] status=active active=True
+2025-09-26 01:16:57,317 INFO [local-test] status=active active=True
+2025-09-26 01:17:07,332 INFO [local-test] status=active active=True
+2025-09-26 01:17:17,347 INFO [local-test] status=active active=True
+2025-09-26 01:17:27,377 INFO [local-test] status=active active=True
+2025-09-26 01:17:37,390 INFO [local-test] status=active active=True
+2025-09-26 01:17:47,424 INFO [local-test] status=active active=True
+2025-09-26 01:17:57,439 INFO [local-test] status=active active=True
+2025-09-26 01:18:07,454 INFO [local-test] status=active active=True
+2025-09-26 01:18:15,661 INFO Starting monitor with 2 targets
+2025-09-26 01:18:15,666 INFO [local-my-sql] status=active active=True
+2025-09-26 01:18:15,672 INFO [local-prometheus] status=active active=True
+2025-09-26 01:18:25,682 INFO [local-my-sql] status=active active=True
+2025-09-26 01:18:35,693 INFO [local-my-sql] status=active active=True
+2025-09-26 01:18:35,698 INFO [local-prometheus] status=active active=True
+2025-09-26 01:18:45,708 INFO [local-my-sql] status=active active=True
+2025-09-26 01:18:55,717 INFO [local-my-sql] status=active active=True
+2025-09-26 01:18:55,724 INFO [local-prometheus] status=active active=True
+2025-09-26 01:19:05,733 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:15,743 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:15,748 INFO [local-prometheus] status=active active=True
+2025-09-26 01:19:25,758 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:35,767 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:35,773 INFO [local-prometheus] status=active active=True
+2025-09-26 01:19:45,782 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:55,791 INFO [local-my-sql] status=active active=True
+2025-09-26 01:19:55,798 INFO [local-prometheus] status=active active=True
+2025-09-26 01:25:38,586 INFO Starting monitor with 2 targets
+2025-09-26 01:25:38,591 INFO [local-my-sql] status=active active=True
+2025-09-26 01:25:38,596 INFO [local-prometheus] status=active active=True
+2025-09-26 01:25:48,607 INFO [local-my-sql] status=active active=True
+2025-09-26 01:25:58,615 INFO [local-my-sql] status=active active=True
+2025-09-26 01:25:58,621 INFO [local-prometheus] status=active active=True
+2025-09-26 01:29:51,218 INFO Starting monitor with 2 targets
+2025-09-26 01:29:51,224 INFO [local-my-sql] status=active active=True
+2025-09-26 01:29:51,229 INFO [local-prometheus] status=active active=True
+2025-09-26 01:30:01,238 INFO [local-my-sql] status=active active=True
+2025-09-26 01:30:11,248 INFO [local-my-sql] status=active active=True
+2025-09-26 01:30:11,254 INFO [local-prometheus] status=active active=True
+2025-09-26 01:32:00,697 INFO Starting monitor with 2 targets
+2025-09-26 01:32:00,703 INFO [local-my-sql] status=active active=True
+2025-09-26 01:32:00,709 INFO [local-prometheus] status=active active=True
+2025-09-26 01:32:10,720 INFO [local-my-sql] status=active active=True
+2025-09-26 01:32:20,730 INFO [local-my-sql] status=active active=True
+2025-09-26 01:32:20,737 INFO [local-prometheus] status=active active=True
+2025-09-26 01:32:30,747 INFO [local-my-sql] status=active active=True
+2025-09-26 01:32:40,755 INFO [local-my-sql] status=active active=True
+2025-09-26 01:32:40,760 INFO [local-prometheus] status=active active=True
+2025-09-26 01:32:50,772 INFO [local-my-sql] status=active active=True
+2025-09-26 01:33:00,782 INFO [local-my-sql] status=active active=True
+2025-09-26 01:33:00,787 INFO [local-prometheus] status=active active=True
+2025-09-26 01:33:10,797 INFO [local-my-sql] status=active active=True
+2025-09-26 01:33:20,809 INFO [local-my-sql] status=active active=True
+2025-09-26 01:33:20,818 INFO [local-prometheus] status=active active=True
+2025-09-26 01:35:18,522 INFO MongoDB logging enabled and connected
+2025-09-26 01:35:18,528 INFO [local-test] status=active active=True
+2025-09-26 01:36:03,550 INFO MongoDB logging enabled and connected
+2025-09-26 01:36:03,550 INFO Starting monitor with 1 targets
+2025-09-26 01:36:03,557 INFO [local-test] status=active active=True
+2025-09-26 01:36:13,568 INFO [local-test] status=active active=True
+2025-09-26 01:36:23,581 INFO [local-test] status=active active=True
+2025-09-26 01:39:51,400 INFO Starting monitor with 2 targets
+2025-09-26 01:39:51,406 INFO [local-my-sql] status=active active=True
+2025-09-26 01:39:51,412 INFO [local-prometheus] status=active active=True
+2025-09-26 01:40:01,419 INFO [local-my-sql] status=active active=True
+2025-09-26 01:40:11,429 INFO [local-my-sql] status=active active=True
+2025-09-26 01:40:11,435 INFO [local-prometheus] status=active active=True
+2025-09-26 01:40:24,195 INFO MongoDB logging enabled and connected
+2025-09-26 01:40:24,195 INFO Starting monitor with 1 targets
+2025-09-26 01:40:24,206 INFO [local-test] status=active active=True
+2025-09-26 01:40:34,216 INFO [local-test] status=active active=True
+2025-09-26 01:40:44,225 INFO [local-test] status=active active=True
+2025-09-26 01:41:20,054 INFO MongoDB logging enabled and connected
+2025-09-26 01:41:20,055 INFO Starting monitor with 2 targets
+2025-09-26 01:41:20,066 INFO [local-my-sql] status=active active=True
+2025-09-26 01:41:20,075 INFO [local-prometheus] status=active active=True
+2025-09-26 01:41:30,086 INFO [local-my-sql] status=active active=True
+2025-09-26 01:41:40,101 INFO [local-my-sql] status=active active=True
+2025-09-26 01:41:40,109 INFO [local-prometheus] status=active active=True
+2025-09-26 01:41:50,121 INFO [local-my-sql] status=active active=True
+2025-09-26 01:56:20,685 INFO MongoDB logging enabled and connected
+2025-09-26 01:56:20,685 INFO Starting monitor with 1 targets
+2025-09-26 01:56:20,691 INFO [local-test] status=active active=True
+2025-09-26 01:56:30,701 INFO [local-test] status=active active=True
+2025-09-26 17:49:28,178 INFO MongoDB logging enabled and connected
+2025-09-26 17:49:28,180 INFO Starting monitor with 2 targets
+2025-09-26 17:49:28,210 INFO [local-my-sql] status=active active=True
+2025-09-26 17:49:28,242 INFO [local-prometheus] status=active active=True
+2025-09-26 17:49:38,259 INFO [local-my-sql] status=active active=True
+2025-09-26 17:49:48,276 INFO [local-my-sql] status=active active=True
+2025-09-26 17:49:48,292 INFO [local-prometheus] status=active active=True
+2025-09-26 17:49:58,309 INFO [local-my-sql] status=active active=True
+2025-09-26 17:50:08,328 INFO [local-my-sql] status=active active=True
+2025-09-26 17:50:08,345 INFO [local-prometheus] status=active active=True
+2025-09-26 17:50:18,363 INFO [local-my-sql] status=active active=True
