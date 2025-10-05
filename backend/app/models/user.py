@@ -1,5 +1,6 @@
 # app/models/user.py
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Table
+from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -8,7 +9,7 @@ from app.database import Base
 user_roles = Table(
     'user_roles',
     Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('user_id', BIGINT(unsigned=True).with_variant(Integer, "sqlite"), ForeignKey('users.id'), primary_key=True),
     Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True)
 )
 
@@ -21,8 +22,8 @@ role_permissions = Table(
 
 class User(Base):
     __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
+
+    id = Column(BIGINT(unsigned=True).with_variant(Integer, "sqlite"), primary_key=True, index=True, autoincrement=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -80,9 +81,9 @@ class Permission(Base):
 
 class UserSession(Base):
     __tablename__ = "user_sessions"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(BIGINT(unsigned=True).with_variant(Integer, "sqlite"), ForeignKey("users.id"), nullable=False)
     session_token = Column(String(255), unique=True, nullable=False)
     refresh_token = Column(String(255))
     device_name = Column(String(100))

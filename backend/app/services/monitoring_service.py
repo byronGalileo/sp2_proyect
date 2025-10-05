@@ -1,52 +1,20 @@
 # app/services/monitoring_service.py
-import sys
-import os
-from typing import Dict, Any
-
-# Import your existing monitoring classes
-# Add your framework directory to Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import your existing monitor classes
-from your_monitor_framework import SQLServerMonitor, MySQLMonitor, PostgreSQLMonitor
+from typing import Dict, Any, Optional
+from sqlalchemy.orm import Session
+from app.services.database_service import DatabaseService
+from app.schemas.database_monitoring import ExecuteMonitoringResponse
 
 class MonitoringService:
-    """Service to integrate your existing monitoring framework"""
-    
-    @staticmethod
-    def get_monitor_class(db_type: str):
-        """Get the appropriate monitor class"""
-        monitors = {
-            'mysql': MySQLMonitor,
-            'postgresql': PostgreSQLMonitor,
-            'sqlserver': SQLServerMonitor
-        }
-        return monitors.get(db_type.lower())
-    
-    @staticmethod
-    def execute_monitoring(connection_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute monitoring using your existing framework"""
-        try:
-            monitor_class = MonitoringService.get_monitor_class(connection_data['db_type'])
-            if not monitor_class:
-                return {"status": "error", "error": "Unsupported database type"}
-            
-            # Create monitor instance
-            monitor = monitor_class(
-                server=connection_data['hostname'],
-                database=connection_data['database_name'],
-                username=connection_data['username'],
-                password=connection_data['password'],  # This should be decrypted
-                port=connection_data['port']
-            )
-            
-            # Execute monitoring
-            result = monitor.monitor()
-            return result
-            
-        except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e),
-                "error_type": type(e).__name__
-            }
+    """Service for database monitoring operations"""
+
+    def __init__(self, db: Session):
+        self.db = db
+        self.database_service = DatabaseService(db)
+
+    def execute_monitoring(self, connection_id: int, user_id: int) -> ExecuteMonitoringResponse:
+        """Execute monitoring for a database connection"""
+        return self.database_service.execute_monitoring(connection_id, user_id)
+
+    def get_monitoring_results(self, connection_id: int, user_id: int, skip: int = 0, limit: int = 50):
+        """Get monitoring results for a connection"""
+        return self.database_service.get_monitoring_results(connection_id, user_id, skip, limit)

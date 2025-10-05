@@ -1,46 +1,23 @@
-"""
-MongoDB Database Module for Service Monitoring
+# app/database.py
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from app.config import settings
 
-This module provides a scalable MongoDB structure for saving and querying
-service monitoring logs and events.
+engine = create_engine(
+    settings.DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    echo=False  # Set to True for SQL debugging
+)
 
-Key Components:
-- models: Data models for logs and events
-- connection: MongoDB connection management
-- operations: Database operations (save, query, statistics)
-- config: Configuration management
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-Usage:
-    from database import log_operations, LogEntry, LogLevel
-
-    # Create a log entry
-    log = LogEntry(
-        service_name="prometheus",
-        log_level=LogLevel.INFO,
-        message="Service is running",
-        host="localhost"
-    )
-
-    # Save to MongoDB
-    log_operations.save_log(log)
-
-    # Query logs
-    recent_logs = log_operations.get_recent_logs("prometheus", hours=24)
-"""
-
-from .models import LogEntry, EventEntry, LogLevel, ServiceStatus, ServiceStatus
-from .connection import mongo_connection
-from .operations import log_operations
-from .config import MongoConfig
-
-__all__ = [
-    'LogEntry',
-    'EventEntry',
-    'LogLevel',
-    'ServiceStatus',
-    'mongo_connection',
-    'log_operations',
-    'MongoConfig'
-]
-
-__version__ = "1.0.0"
+def get_db():
+    """Dependency to get database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

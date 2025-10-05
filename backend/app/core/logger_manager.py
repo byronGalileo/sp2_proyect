@@ -8,7 +8,11 @@ from datetime import datetime
 # Add parent directory to path for database imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from database import log_operations, LogEntry, EventEntry, LogLevel, ServiceStatus as MongoServiceStatus
+from app.database.operations import LogOperations
+from app.database.models import LogEntry, EventEntry, LogLevel, ServiceStatus as MongoServiceStatus
+
+# Global log operations instance
+log_operations = LogOperations()
 
 class LoggerManager:
     """Unified logging manager with MongoDB integration"""
