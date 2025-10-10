@@ -1,37 +1,34 @@
-// lib/main.dart
+import 'dart:ui';
+
+import 'app/config/routes/app_pages.dart';
+import 'app/config/themes/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'providers/auth_provider.dart';
-import 'providers/theme_provider.dart';
-import 'routes/app_routes.dart';
-import 'config/app_config.dart';
+import 'package:get/get.dart';
 
 void main() {
-  runApp(const DatabaseMonitorApp());
+  runApp(const MyApp());
 }
 
-class DatabaseMonitorApp extends StatelessWidget {
-  const DatabaseMonitorApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-      ],
-      child: Consumer2<ThemeProvider, AuthProvider>(
-        builder: (context, themeProvider, authProvider, child) {
-          return MaterialApp.router(
-            title: AppConfig.appName,
-            debugShowCheckedModeBanner: false,
-            theme: themeProvider.lightTheme,
-            darkTheme: themeProvider.darkTheme,
-            themeMode: themeProvider.themeMode,
-            routerConfig: AppRoutes.router(authProvider),
-          );
-        },
-      ),
+    return GetMaterialApp(
+      title: 'Monitoring System',
+      theme: AppTheme.basic,
+      initialRoute: AppPages.initial,
+      getPages: AppPages.routes,
+      scrollBehavior: CustomScrollBehaviour(),
+      debugShowCheckedModeBanner: false,
     );
   }
+}
+
+class CustomScrollBehaviour extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+      };
 }

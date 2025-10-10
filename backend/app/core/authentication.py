@@ -56,3 +56,35 @@ def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+def require_role(*allowed_roles: str):
+    """Dependency to check if user has required role"""
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        user_roles = [role.name for role in current_user.roles]
+
+        if not any(role in user_roles for role in allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required roles: {', '.join(allowed_roles)}"
+            )
+
+        return current_user
+
+    return role_checker
+
+def require_permission(*required_permissions: str):
+    """Dependency to check if user has required permission"""
+    def permission_checker(current_user: User = Depends(get_current_user)) -> User:
+        user_permissions = []
+        for role in current_user.roles:
+            user_permissions.extend([perm.name for perm in role.permissions])
+
+        if not any(perm in user_permissions for perm in required_permissions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required permissions: {', '.join(required_permissions)}"
+            )
+
+        return current_user
+
+    return permission_checker

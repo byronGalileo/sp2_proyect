@@ -1,7 +1,7 @@
 # app/services/user_service.py
-from typing import Optional
+from typing import Optional, List, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from datetime import datetime
 
 from app.models.user import User, Role
@@ -69,12 +69,12 @@ class UserService:
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             return None
-        
+
         roles = [role.name for role in user.roles]
         permissions = []
         for role in user.roles:
             permissions.extend([perm.name for perm in role.permissions])
-        
+
         return {
             "id": user.id,
             "username": user.username,
@@ -85,8 +85,124 @@ class UserService:
             "avatar_url": user.avatar_url,
             "is_active": user.is_active,
             "email_verified": user.email_verified,
+            "phone_verified": user.phone_verified,
             "last_login_at": user.last_login_at,
             "created_at": user.created_at,
+            "updated_at": user.updated_at,
             "roles": roles,
             "permissions": list(set(permissions))  # Remove duplicates
         }
+
+    def get_all_users(self, skip: int = 0, limit: int = 100, is_active: Optional[bool] = None) -> Tuple[List[User], int]:
+        """Get all users with pagination and optional filtering"""
+        query = self.db.query(User)
+
+        if is_active is not None:
+            query = query.filter(User.is_active == is_active)
+
+        total = query.count()
+        users = query.offset(skip).limit(limit).all()
+
+        return users, total
+
+    def update_user(self, user_id: int, update_data: dict) -> Optional[User]:
+        """Update user data (admin only)"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        for field, value in update_data.items():
+            if hasattr(user, field):
+                setattr(user, field, value)
+
+        user.updated_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def deactivate_user(self, user_id: int) -> Optional[User]:
+        """Deactivate a user (soft delete)"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        user.is_active = False
+        user.deleted_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def activate_user(self, user_id: int) -> Optional[User]:
+        """Activate a user"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        user.is_active = True
+        user.deleted_at = None
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def assign_roles(self, user_id: int, role_ids: List[int]) -> Optional[User]:
+        """Assign roles to a user"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        roles = self.db.query(Role).filter(Role.id.in_(role_ids)).all()
+        user.roles = roles
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user
+
+    def add_role(self, user_id: int, role_id: int) -> Optional[User]:
+        """Add a single role to a user"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        role = self.db.query(Role).filter(Role.id == role_id).first()
+        if not role:
+            return None
+
+        if role not in user.roles:
+            user.roles.append(role)
+            self.db.commit()
+            self.db.refresh(user)
+
+        return user
+
+    def remove_role(self, user_id: int, role_id: int) -> Optional[User]:
+        """Remove a role from a user"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        role = self.db.query(Role).filter(Role.id == role_id).first()
+        if not role:
+            return None
+
+        if role in user.roles:
+            user.roles.remove(role)
+            self.db.commit()
+            self.db.refresh(user)
+
+        return user
+
+    def reset_password(self, user_id: int, new_password: str) -> Optional[User]:
+        """Reset user password (admin action)"""
+        user = self.get_by_id(user_id)
+        if not user:
+            return None
+
+        user.password_hash = get_password_hash(new_password)
+        user.password_changed_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(user)
+
+        return user

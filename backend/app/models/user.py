@@ -13,12 +13,17 @@ user_roles = Table(
     Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True)
 )
 
-role_permissions = Table(
-    'role_permissions',
-    Base.metadata,
-    Column('role_id', Integer, ForeignKey('roles.id'), primary_key=True),
-    Column('permission_id', Integer, ForeignKey('permissions.id'), primary_key=True)
-)
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    role_id = Column(BIGINT(unsigned=True).with_variant(Integer, "sqlite"), ForeignKey('roles.id'), nullable=False)
+    permission_id = Column(BIGINT(unsigned=True).with_variant(Integer, "sqlite"), ForeignKey('permissions.id'), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+    # Relationships
+    role = relationship("Role", back_populates="role_permissions")
+    permission = relationship("Permission", back_populates="role_permissions")
 
 class User(Base):
     __tablename__ = "users"
@@ -49,7 +54,7 @@ class User(Base):
 
 class Role(Base):
     __tablename__ = "roles"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(50), unique=True, nullable=False)
     display_name = Column(String(100), nullable=False)
@@ -58,14 +63,19 @@ class Role(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    
+
     # Relationships
     users = relationship("User", secondary=user_roles, back_populates="roles")
-    permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
+    role_permissions = relationship("RolePermission", back_populates="role", cascade="all, delete-orphan")
+
+    # Helper property to get permissions directly
+    @property
+    def permissions(self):
+        return [rp.permission for rp in self.role_permissions]
 
 class Permission(Base):
     __tablename__ = "permissions"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False)
     display_name = Column(String(100), nullable=False)
@@ -75,9 +85,14 @@ class Permission(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    
+
     # Relationships
-    roles = relationship("Role", secondary=role_permissions, back_populates="permissions")
+    role_permissions = relationship("RolePermission", back_populates="permission", cascade="all, delete-orphan")
+
+    # Helper property to get roles directly
+    @property
+    def roles(self):
+        return [rp.role for rp in self.role_permissions]
 
 class UserSession(Base):
     __tablename__ = "user_sessions"

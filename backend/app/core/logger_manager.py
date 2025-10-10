@@ -9,7 +9,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app.database.operations import LogOperations
-from app.database.models import LogEntry, EventEntry, LogLevel, ServiceStatus as MongoServiceStatus
+from app.models.logs_models import LogEntry, EventEntry, LogLevel, ServiceStatus as MongoServiceStatus
 
 # Global log operations instance
 log_operations = LogOperations()

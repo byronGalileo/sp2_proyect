@@ -24,7 +24,8 @@ class DatabaseService:
 
     def __init__(self, db: Session):
         self.db = db
-        self.cipher = Fernet(settings.SECRET_KEY.encode()[:32].ljust(32, b'\0'))
+        print(settings.SECRET_ENCODE)
+        self.cipher = Fernet(settings.SECRET_ENCODE.encode())
         # Initialize logger manager for MongoDB logging
         self.logger_manager = LoggerManager(
             log_path="logs/database_service.log",

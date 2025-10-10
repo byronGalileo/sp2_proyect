@@ -7,7 +7,7 @@ import uvicorn
 
 from app.config import settings
 from app.database import engine, Base
-from app.api import auth, users, databases, monitoring
+from app.api import auth, users, databases, monitoring, roles, permissions, role_permissions
 
 # Create tables on startup
 @asynccontextmanager
@@ -38,6 +38,9 @@ app.add_middleware(
 # Include API routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(roles.router, prefix="/api/v1/roles", tags=["Roles"])
+app.include_router(permissions.router, prefix="/api/v1/permissions", tags=["Permissions"])
+app.include_router(role_permissions.router, prefix="/api/v1/role-permissions", tags=["Role Permissions"])
 app.include_router(databases.router, prefix="/api/v1/databases", tags=["Databases"])
 app.include_router(monitoring.router, prefix="/api/v1/monitoring", tags=["Monitoring"])
 

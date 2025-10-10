@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Union
 from pymongo.errors import PyMongoError
 from .connection import mongo_connection
-from .models import LogEntry, EventEntry, LogLevel, ServiceStatus
+from app.models.logs_models import LogEntry, EventEntry, LogLevel, ServiceStatus
 
 logger = logging.getLogger(__name__)
 
