@@ -1,2 +1,14 @@
 /monitor/config/config.json
 /monitor/config/config.local.json
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.env
+.venv
+*__pycache__
+*.log
+*.csv
+*.json
+venv
