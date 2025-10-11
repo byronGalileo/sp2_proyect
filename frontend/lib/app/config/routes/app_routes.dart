@@ -10,6 +10,8 @@ class Routes {
   static const profile = _Paths.profile;
   static const roles = _Paths.roles;
   static const users = _Paths.users;
+  static const servicesStatus = _Paths.servicesStatus;
+  static const logs = _Paths.logs;
 }
 
 /// contains a list of route names.
@@ -23,4 +25,6 @@ class _Paths {
   static const profile = '/profile';
   static const roles = '/admin/roles';
   static const users = '/admin/users';
+  static const servicesStatus = '/monitoring/services-status';
+  static const logs = '/monitoring/logs';
 }

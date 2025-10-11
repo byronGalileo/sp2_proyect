@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:eva_icons_flutter/eva_icons_flutter.dart';
+import '../../../../config/app_config.dart';
+import '../../../../models/service.dart';
+
+class ServiceCard extends StatelessWidget {
+  final Service service;
+
+  const ServiceCard({super.key, required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppConfig.padding),
+      child: Padding(
+        padding: const EdgeInsets.all(AppConfig.padding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: _buildContent(context),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildContent(BuildContext context) {
+    return [
+      Row(
+        children: [
+          _buildStatusIndicator(context),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              service.id,
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (service.latestLevel != null)
+            _buildLevelBadge(context, service.latestLevel!),
+        ],
+      ),
+      const Divider(height: 24),
+      Row(
+        children: [
+          Expanded(
+            child: _buildStatItem(
+              context,
+              icon: EvaIcons.fileText,
+              label: 'Total Logs',
+              value: service.totalLogs.toString(),
+            ),
+          ),
+          Expanded(
+            child: _buildStatItem(
+              context,
+              icon: EvaIcons.alertCircle,
+              label: 'Unsent',
+              value: service.unsentLogs.toString(),
+              color: service.unsentLogs > 0 ? Colors.orange : null,
+            ),
+          ),
+        ],
+      ),
+      if (service.latestTimestamp != null) ...[
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            const Icon(EvaIcons.clock, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              'Last update: ${_formatTimestamp(service.latestTimestamp!)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ],
+      if (service.serviceType != null && service.serviceType != 'unknown') ...[
+        const SizedBox(height: 8),
+        Chip(
+          label: Text(service.serviceType!),
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    ];
+  }
+  Color _getLevelColor(String level) {
+    switch (level.toUpperCase()) {
+      case 'ERROR':
+        return Colors.red;
+      case 'WARNING':
+        return Colors.orange;
+      case 'INFO':
+        return Colors.blue;
+      case 'DEBUG':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildStatusIndicator(BuildContext context) {
+    final color = service.latestLevel != null
+        ? _getLevelColor(service.latestLevel!)
+        : Colors.grey;
+
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+
+  Widget _buildLevelBadge(BuildContext context, String level) {
+    final color = _getLevelColor(level);
+    final bgColor = color.withOpacity(0.15);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        level,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dt = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final difference = now.difference(dt);
+
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
+        return '${difference.inMinutes}m ago';
+      } else if (difference.inHours < 24) {
+        return '${difference.inHours}h ago';
+      } else {
+        return '${difference.inDays}d ago';
+      }
+    } catch (e) {
+      return timestamp;
+    }
+  }
+}

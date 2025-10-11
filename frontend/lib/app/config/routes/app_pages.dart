@@ -11,6 +11,10 @@ import '../../features/roles/views/screens/roles_screen.dart';
 import '../../features/users/bindings/users_binding.dart';
 import '../../shared_components/dashboard_wrapper.dart';
 import '../../features/users/views/screens/users_screen.dart';
+import '../../features/monitoring/bindings/services_binding.dart';
+import '../../features/monitoring/views/screens/services_status_screen.dart';
+import '../../features/monitoring/bindings/logs_binding.dart';
+import '../../features/monitoring/views/screens/logs_screen.dart';
 
 part 'app_routes.dart';
 
@@ -74,6 +78,24 @@ class AppPages {
       bindings: [
         DashboardBinding(),
         UsersBinding(),
+        AuthBinding(),
+      ],
+    ),
+    GetPage(
+      name: _Paths.servicesStatus,
+      page: () => const ServicesStatusScreen(),
+      bindings: [
+        DashboardBinding(),
+        ServicesBinding(),
+        AuthBinding(),
+      ],
+    ),
+    GetPage(
+      name: _Paths.logs,
+      page: () => const LogsScreen(),
+      bindings: [
+        DashboardBinding(),
+        LogsBinding(),
         AuthBinding(),
       ],
     ),

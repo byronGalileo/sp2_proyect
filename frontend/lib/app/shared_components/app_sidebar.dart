@@ -33,13 +33,32 @@ class AppSidebar extends StatelessWidget {
                   activeIcon: EvaIcons.wifi,
                   icon: EvaIcons.wifi,
                   label: "Services",
+                  children: [
+                    SelectionButtonData(
+                      activeIcon: EvaIcons.options2,
+                      icon: EvaIcons.options2Outline,
+                      label: "Admin Services",
+                    ),
+                  ],
                   totalNotif: 100,
                 ),
                 SelectionButtonData(
                   activeIcon: EvaIcons.monitor,
                   icon: EvaIcons.monitorOutline,
                   label: "Monitoring",
-                  totalNotif: 20,
+                  children: [
+                    SelectionButtonData(
+                      activeIcon: EvaIcons.barChart,
+                      icon: EvaIcons.barChart,
+                      label: "Services Status",
+                    ),
+                    SelectionButtonData(
+                      activeIcon: EvaIcons.layers,
+                      icon: EvaIcons.layersOutline,
+                      label: "Logs",
+                    ),
+                  ],
+                  // totalNotif: 20,
                 ),
                 SelectionButtonData(
                   activeIcon: EvaIcons.settings,
@@ -57,8 +76,8 @@ class AppSidebar extends StatelessWidget {
                       label: "Roles",
                     ),
                     SelectionButtonData(
-                      activeIcon: EvaIcons.settings2,
-                      icon: EvaIcons.settingsOutline,
+                      activeIcon: EvaIcons.options2,
+                      icon: EvaIcons.options2Outline,
                       label: "Settings",
                     ),
                   ],
@@ -98,6 +117,10 @@ class AppSidebar extends StatelessWidget {
       Get.snackbar('Coming Soon', 'Settings will be available soon');
     } else if (label == 'Home') {
       Get.toNamed('/home');
+    } else if (label == 'Services Status') {
+      Get.toNamed('/monitoring/services-status');
+    } else if (label == 'Logs') {
+      Get.toNamed('/monitoring/logs');
     }
   }
 }
