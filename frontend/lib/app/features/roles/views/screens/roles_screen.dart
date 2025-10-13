@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../../config/app_config.dart';
 import '../../../../models/role.dart';
 import '../../../../shared_components/responsive_builder.dart';
-import '../../../../shared_components/app_sidebar.dart';
+import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/roles_controller.dart';
 import '../widgets/role_form_dialog.dart';
 
@@ -13,47 +13,33 @@ class RolesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-
-    return Scaffold(
-      key: scaffoldKey,
-      drawer: ResponsiveBuilder.isDesktop(context)
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: const AppSidebar(),
-                ),
-              ),
-            ),
-      body: SafeArea(
-        child: ResponsiveBuilder(
-          mobileBuilder: (context, constraints) {
-            return _buildMobileLayout(context, scaffoldKey);
-          },
-          tabletBuilder: (context, constraints) {
-            return _buildTabletLayout(context, scaffoldKey);
-          },
-          desktopBuilder: (context, constraints) {
-            return _buildDesktopLayout(context, constraints);
-          },
-        ),
-      ),
+    return BaseScreenWrapper(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showRoleDialog(context, null),
         icon: const Icon(Icons.add),
         label: const Text('New Role'),
       ),
+      child: ResponsiveBuilder(
+        mobileBuilder: (context, constraints) {
+          return _buildMobileLayout(context);
+        },
+        tabletBuilder: (context, constraints) {
+          return _buildTabletLayout(context);
+        },
+        desktopBuilder: (context, constraints) {
+          return _buildDesktopLayout(context);
+        },
+      ),
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.all(AppConfig.padding),
-          child: _buildHeader(context, scaffoldKey: scaffoldKey),
+          child: _buildHeader(context, showMenuButton: true),
         ),
         _buildSearchBar(context),
         Expanded(child: _buildRolesList(context, isMobile: true)),
@@ -61,71 +47,47 @@ class RolesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
-    return Padding(
-      padding: const EdgeInsets.all(AppConfig.padding),
-      child: Column(
-        children: [
-          _buildHeader(context, scaffoldKey: scaffoldKey),
-          const SizedBox(height: 16),
-          _buildSearchBar(context),
-          const SizedBox(height: 16),
-          Expanded(child: _buildRolesTable(context)),
-        ],
+  Widget _buildTabletLayout(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConfig.padding),
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 16),
+            _buildSearchBar(context),
+            const SizedBox(height: 16),
+            _buildRolesTable(context),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: SingleChildScrollView(
-            controller: ScrollController(),
-            child: const AppSidebar(),
-          ),
+  Widget _buildDesktopLayout(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConfig.padding * 2),
+        child: Column(
+          children: [
+            _buildHeader(context),
+            const SizedBox(height: 16),
+            _buildSearchBar(context),
+            const SizedBox(height: 16),
+            _buildRolesTable(context),
+          ],
         ),
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 10 : 9,
-          child: SingleChildScrollView(
-            controller: ScrollController(),
-            child: Padding(
-              padding: const EdgeInsets.all(AppConfig.padding * 2),
-              child: Column(
-                children: [
-                  _buildHeader(context),
-                  const SizedBox(height: 16),
-                  _buildSearchBar(context),
-                  const SizedBox(height: 16),
-                  _buildRolesTable(context),
-                ],
-              ),
-            ),
-          ),
-        ),
-        SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: const VerticalDivider(),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, {GlobalKey<ScaffoldState>? scaffoldKey}) {
+  Widget _buildHeader(BuildContext context, {bool showMenuButton = false}) {
     return Row(
       children: [
-        if (scaffoldKey != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                scaffoldKey.currentState?.openDrawer();
-              },
-            ),
-          ),
+        if (showMenuButton) ...[
+          const DrawerMenuButton(),
+          const SizedBox(width: 8),
+        ],
         Expanded(
           child: Text(
             'Roles Management',

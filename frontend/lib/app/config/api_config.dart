@@ -23,4 +23,14 @@ class ApiEndpoints {
   // Monitoring endpoints
   static const String services = '/services';
   static const String logs = '/logs';
+
+  // Host endpoints
+  static const String hosts = '/hosts';
+  static const String hostsEnvironments = '/hosts/metadata/environments';
+  static const String hostsRegions = '/hosts/metadata/regions';
+
+  // Managed Services endpoints
+  static const String managedServices = '/services';
+  static const String servicesDashboard = '/services/dashboard/summary';
+  static const String servicesAttention = '/services/attention/needed';
 }

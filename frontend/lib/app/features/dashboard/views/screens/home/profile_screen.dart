@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../../../../shared_components/responsive_builder.dart';
-import '../../../../../shared_components/app_sidebar.dart';
+import '../../../../../shared_components/base_screen_wrapper.dart';
 import 'profile_page.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -9,100 +8,60 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scaffoldKey = GlobalKey<ScaffoldState>();
-
-    return Scaffold(
-      key: scaffoldKey,
-      drawer: ResponsiveBuilder.isDesktop(context)
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: const AppSidebar(),
-                ),
-              ),
-            ),
-      body: SafeArea(
-        child: ResponsiveBuilder(
-          mobileBuilder: (context, constraints) {
-            return _buildMobileLayout(context, scaffoldKey);
-          },
-          tabletBuilder: (context, constraints) {
-            return _buildTabletLayout(context, scaffoldKey);
-          },
-          desktopBuilder: (context, constraints) {
-            return _buildDesktopLayout(context, constraints);
-          },
-        ),
+    return BaseScreenWrapper(
+      child: ResponsiveBuilder(
+        mobileBuilder: (context, constraints) {
+          return _buildMobileLayout(context);
+        },
+        tabletBuilder: (context, constraints) {
+          return _buildTabletLayout(context);
+        },
+        desktopBuilder: (context, constraints) {
+          return _buildDesktopLayout(context);
+        },
       ),
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context, scaffoldKey: scaffoldKey),
+        _buildHeader(context, showMenuButton: true),
         const Expanded(child: ProfilePage()),
       ],
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context, GlobalKey<ScaffoldState> scaffoldKey) {
+  Widget _buildTabletLayout(BuildContext context) {
     return Column(
       children: [
-        _buildHeader(context, scaffoldKey: scaffoldKey),
+        _buildHeader(context),
         const Expanded(child: ProfilePage()),
       ],
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: SingleChildScrollView(
-            controller: ScrollController(),
-            child: const AppSidebar(),
-          ),
-        ),
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 10 : 9,
-          child: SingleChildScrollView(
-            controller: ScrollController(),
-            child: Column(
-              children: [
-                _buildHeader(context),
-                const ProfilePage(),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(
-          height: MediaQuery.of(context).size.height,
-          child: const VerticalDivider(),
-        ),
-      ],
+  Widget _buildDesktopLayout(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildHeader(context),
+          const ProfilePage(),
+        ],
+      ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, {GlobalKey<ScaffoldState>? scaffoldKey}) {
+  Widget _buildHeader(BuildContext context, {bool showMenuButton = false}) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         children: [
-          if (scaffoldKey != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () {
-                  scaffoldKey.currentState?.openDrawer();
-                },
-              ),
-            ),
+          if (showMenuButton) ...[
+            const DrawerMenuButton(),
+            const SizedBox(width: 8),
+          ],
           Expanded(
             child: Text(
               'Profile',
@@ -111,11 +70,6 @@ class ProfileScreen extends StatelessWidget {
                   ),
             ),
           ),
-          if (scaffoldKey == null)
-            IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Get.back(),
-            ),
         ],
       ),
     );

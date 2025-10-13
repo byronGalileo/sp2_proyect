@@ -5,7 +5,7 @@ import '../../../../config/app_config.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../models/user.dart';
-import '../../../../shared_components/app_sidebar.dart';
+import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/users_controller.dart';
 import '../widgets/user_card.dart';
 import '../widgets/user_form_dialog.dart';
@@ -13,43 +13,24 @@ import '../widgets/user_table.dart';
 import '../widgets/assign_roles_dialog.dart';
 import '../widgets/reset_password_dialog.dart';
 
-class UsersScreen extends StatefulWidget {
+class UsersScreen extends StatelessWidget {
   const UsersScreen({super.key});
-
-  @override
-  State<UsersScreen> createState() => _UsersScreenState();
-}
-
-class _UsersScreenState extends State<UsersScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<UsersController>();
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: ResponsiveBuilder.isDesktop(context)
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: const AppSidebar(),
-                ),
-              ),
-            ),
-      body: SafeArea(
-        child: ResponsiveBuilder(
-          mobileBuilder: (context, constraints) {
-            return _buildMobileLayout(context, controller);
-          },
-          tabletBuilder: (context, constraints) {
-            return _buildTabletLayout(context, controller, constraints);
-          },
-          desktopBuilder: (context, constraints) {
-            return _buildDesktopLayout(context, controller, constraints);
-          },
-        ),
+    return BaseScreenWrapper(
+      child: ResponsiveBuilder(
+        mobileBuilder: (context, constraints) {
+          return _buildMobileLayout(context, controller);
+        },
+        tabletBuilder: (context, constraints) {
+          return _buildTabletLayout(context, controller);
+        },
+        desktopBuilder: (context, constraints) {
+          return _buildDesktopLayout(context, controller);
+        },
       ),
     );
   }
@@ -95,112 +76,76 @@ class _UsersScreenState extends State<UsersScreen> {
     );
   }
 
-  Widget _buildTabletLayout(
-      BuildContext context, UsersController controller, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTabletLayout(BuildContext context, UsersController controller) {
+    return Column(
       children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: IntrinsicHeight(
-            child: SingleChildScrollView(
-              child: AppSidebar(onItemSelected: () => _scaffoldKey.currentState?.closeDrawer()),
-            ),
-          ),
-        ),
-        const VerticalDivider(width: 1),
-        Flexible(
-          flex: 7,
-          child: Column(
-            children: [
-              _buildHeader(context, controller),
-              _buildFilters(context, controller),
-              Expanded(
-                child: Obx(() {
-                  if (controller.isLoading.value && controller.users.isEmpty) {
-                    return const Center(child: LoadingWidget());
-                  }
+        _buildHeader(context, controller),
+        _buildFilters(context, controller),
+        Expanded(
+          child: Obx(() {
+            if (controller.isLoading.value && controller.users.isEmpty) {
+              return const Center(child: LoadingWidget());
+            }
 
-                  if (controller.users.isEmpty) {
-                    return const Center(child: Text('No users found'));
-                  }
+            if (controller.users.isEmpty) {
+              return const Center(child: Text('No users found'));
+            }
 
-                  return Padding(
-                    padding: const EdgeInsets.all(AppConfig.padding),
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: UserTable(
-                        users: controller.users,
-                        onEdit: (user) => _showUserDialog(context, user: user),
-                        onToggleActive: (user) => user.isActive
-                            ? controller.deactivateUser(user.id)
-                            : controller.activateUser(user.id),
-                        onAssignRoles: (user) => _showAssignRolesDialog(context, user),
-                        onResetPassword: (user) => _showResetPasswordDialog(context, user),
-                      ),
-                    ),
-                  );
-                }),
+            return Padding(
+              padding: const EdgeInsets.all(AppConfig.padding),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: UserTable(
+                  users: controller.users,
+                  onEdit: (user) => _showUserDialog(context, user: user),
+                  onToggleActive: (user) => user.isActive
+                      ? controller.deactivateUser(user.id)
+                      : controller.activateUser(user.id),
+                  onAssignRoles: (user) => _showAssignRolesDialog(context, user),
+                  onResetPassword: (user) => _showResetPasswordDialog(context, user),
+                ),
               ),
-              _buildPagination(context, controller),
-            ],
-          ),
+            );
+          }),
         ),
+        _buildPagination(context, controller),
       ],
     );
   }
 
-  Widget _buildDesktopLayout(
-      BuildContext context, UsersController controller, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDesktopLayout(BuildContext context, UsersController controller) {
+    return Column(
       children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: IntrinsicHeight(
-            child: SingleChildScrollView(
-              child: AppSidebar(onItemSelected: () => _scaffoldKey.currentState?.closeDrawer()),
-            ),
-          ),
-        ),
-        const VerticalDivider(width: 1),
-        Flexible(
-          flex: 8,
-          child: Column(
-            children: [
-              _buildHeader(context, controller),
-              _buildFilters(context, controller),
-              Expanded(
-                child: Obx(() {
-                  if (controller.isLoading.value && controller.users.isEmpty) {
-                    return const Center(child: LoadingWidget());
-                  }
+        _buildHeader(context, controller),
+        _buildFilters(context, controller),
+        Expanded(
+          child: Obx(() {
+            if (controller.isLoading.value && controller.users.isEmpty) {
+              return const Center(child: LoadingWidget());
+            }
 
-                  if (controller.users.isEmpty) {
-                    return const Center(child: Text('No users found'));
-                  }
+            if (controller.users.isEmpty) {
+              return const Center(child: Text('No users found'));
+            }
 
-                  return Padding(
-                    padding: const EdgeInsets.all(AppConfig.padding * 2),
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: UserTable(
-                        users: controller.users,
-                        onEdit: (user) => _showUserDialog(context, user: user),
-                        onToggleActive: (user) => user.isActive
-                            ? controller.deactivateUser(user.id)
-                            : controller.activateUser(user.id),
-                        onAssignRoles: (user) => _showAssignRolesDialog(context, user),
-                        onResetPassword: (user) => _showResetPasswordDialog(context, user),
-                      ),
-                    ),
-                  );
-                }),
+            return Padding(
+              padding: const EdgeInsets.all(AppConfig.padding * 2),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: UserTable(
+                  users: controller.users,
+                  onEdit: (user) => _showUserDialog(context, user: user),
+                  onToggleActive: (user) => user.isActive
+                      ? controller.deactivateUser(user.id)
+                      : controller.activateUser(user.id),
+                  onAssignRoles: (user) => _showAssignRolesDialog(context, user),
+                  onResetPassword: (user) => _showResetPasswordDialog(context, user),
+                ),
               ),
-              _buildPagination(context, controller),
-            ],
-          ),
+            );
+          }),
         ),
+        _buildPagination(context, controller),
       ],
     );
   }
@@ -221,10 +166,7 @@ class _UsersScreenState extends State<UsersScreen> {
       child: Row(
         children: [
           if (showMenuButton) ...[
-            IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
+            const DrawerMenuButton(),
             const SizedBox(width: 8),
           ],
           const Icon(EvaIcons.people, size: 24),

@@ -37,6 +37,11 @@ class AppSidebar extends StatelessWidget {
                     SelectionButtonData(
                       activeIcon: EvaIcons.options2,
                       icon: EvaIcons.options2Outline,
+                      label: "Admin Hosts",
+                    ),
+                    SelectionButtonData(
+                      activeIcon: EvaIcons.options2,
+                      icon: EvaIcons.options2Outline,
                       label: "Admin Services",
                     ),
                   ],
@@ -99,7 +104,7 @@ class AppSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(kSpacing),
             child: Text(
-              "2025 Monitor lisence",
+              "2025 Monitor license",
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -117,6 +122,10 @@ class AppSidebar extends StatelessWidget {
       Get.snackbar('Coming Soon', 'Settings will be available soon');
     } else if (label == 'Home') {
       Get.toNamed('/home');
+    } else if (label == 'Admin Hosts') {
+      Get.toNamed('/services/hosts');
+    } else if (label == 'Admin Services') {
+      Get.toNamed('/services/managed-services');
     } else if (label == 'Services Status') {
       Get.toNamed('/monitoring/services-status');
     } else if (label == 'Logs') {

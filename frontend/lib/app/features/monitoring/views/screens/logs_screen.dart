@@ -5,47 +5,28 @@ import 'package:intl/intl.dart';
 import '../../../../config/app_config.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
-import '../../../../shared_components/app_sidebar.dart';
+import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/logs_controller.dart';
 import '../../../../models/log.dart';
 
-class LogsScreen extends StatefulWidget {
+class LogsScreen extends StatelessWidget {
   const LogsScreen({super.key});
-
-  @override
-  State<LogsScreen> createState() => _LogsScreenState();
-}
-
-class _LogsScreenState extends State<LogsScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<LogsController>();
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: ResponsiveBuilder.isDesktop(context)
-          ? null
-          : Drawer(
-              child: SafeArea(
-                child: SingleChildScrollView(
-                  child: const AppSidebar(),
-                ),
-              ),
-            ),
-      body: SafeArea(
-        child: ResponsiveBuilder(
-          mobileBuilder: (context, constraints) {
-            return _buildMobileLayout(context, controller);
-          },
-          tabletBuilder: (context, constraints) {
-            return _buildTabletLayout(context, controller, constraints);
-          },
-          desktopBuilder: (context, constraints) {
-            return _buildDesktopLayout(context, controller, constraints);
-          },
-        ),
+    return BaseScreenWrapper(
+      child: ResponsiveBuilder(
+        mobileBuilder: (context, constraints) {
+          return _buildMobileLayout(context, controller);
+        },
+        tabletBuilder: (context, constraints) {
+          return _buildTabletLayout(context, controller);
+        },
+        desktopBuilder: (context, constraints) {
+          return _buildDesktopLayout(context, controller);
+        },
       ),
     );
   }
@@ -60,54 +41,22 @@ class _LogsScreenState extends State<LogsScreen> {
     );
   }
 
-  Widget _buildTabletLayout(
-      BuildContext context, LogsController controller, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTabletLayout(BuildContext context, LogsController controller) {
+    return Column(
       children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: SingleChildScrollView(
-            child: AppSidebar(onItemSelected: () => _scaffoldKey.currentState?.closeDrawer()),
-          ),
-        ),
-        const VerticalDivider(width: 1),
-        Flexible(
-          flex: 7,
-          child: Column(
-            children: [
-              _buildHeader(context, controller),
-              _buildFiltersBar(context, controller),
-              Expanded(child: _buildLogsContent(context, controller)),
-            ],
-          ),
-        ),
+        _buildHeader(context, controller),
+        _buildFiltersBar(context, controller),
+        Expanded(child: _buildLogsContent(context, controller)),
       ],
     );
   }
 
-  Widget _buildDesktopLayout(
-      BuildContext context, LogsController controller, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDesktopLayout(BuildContext context, LogsController controller) {
+    return Column(
       children: [
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: SingleChildScrollView(
-            child: AppSidebar(onItemSelected: () => _scaffoldKey.currentState?.closeDrawer()),
-          ),
-        ),
-        const VerticalDivider(width: 1),
-        Flexible(
-          flex: 8,
-          child: Column(
-            children: [
-              _buildHeader(context, controller),
-              _buildFiltersBar(context, controller),
-              Expanded(child: _buildLogsContent(context, controller)),
-            ],
-          ),
-        ),
+        _buildHeader(context, controller),
+        _buildFiltersBar(context, controller),
+        Expanded(child: _buildLogsContent(context, controller)),
       ],
     );
   }
@@ -129,10 +78,7 @@ class _LogsScreenState extends State<LogsScreen> {
       child: Row(
         children: [
           if (showMenuButton) ...[
-            IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
+            const DrawerMenuButton(),
             const SizedBox(width: 8),
           ],
           const Icon(EvaIcons.fileText, size: 24),

@@ -83,10 +83,15 @@ class DashboardScreen extends GetView<DashboardController> {
               flex: constraints.maxWidth > 1350 ? 3 : 4,
               child: IntrinsicHeight(
                 child: SingleChildScrollView(
-                  child: AppSidebar(onItemSelected: onMenuButtonPressed),
+                  child: AppSidebar(
+                    onItemSelected: () {
+                      onMenuButtonPressed?.call();
+                    },
+                  ),
                 ),
               ),
             ),
+            const VerticalDivider(width: 1),
             Flexible(
               flex: constraints.maxWidth > 1350 ? 10 : 9,
               child: SingleChildScrollView(

@@ -15,6 +15,10 @@ import '../../features/monitoring/bindings/services_binding.dart';
 import '../../features/monitoring/views/screens/services_status_screen.dart';
 import '../../features/monitoring/bindings/logs_binding.dart';
 import '../../features/monitoring/views/screens/logs_screen.dart';
+import '../../features/hosts/bindings/hosts_binding.dart';
+import '../../features/hosts/views/screens/hosts_screen.dart';
+import '../../features/managed_services/bindings/managed_services_binding.dart';
+import '../../features/managed_services/views/screens/managed_services_screen.dart';
 
 part 'app_routes.dart';
 
@@ -78,6 +82,24 @@ class AppPages {
       bindings: [
         DashboardBinding(),
         UsersBinding(),
+        AuthBinding(),
+      ],
+    ),
+    GetPage(
+      name: _Paths.hosts,
+      page: () => const HostsScreen(),
+      bindings: [
+        DashboardBinding(),
+        HostsBinding(),
+        AuthBinding(),
+      ],
+    ),
+    GetPage(
+      name: _Paths.managedServices,
+      page: () => const ManagedServicesScreen(),
+      bindings: [
+        DashboardBinding(),
+        ManagedServicesBinding(),
         AuthBinding(),
       ],
     ),
