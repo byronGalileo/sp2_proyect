@@ -4,7 +4,7 @@ FastAPI routers for Hosts and Services management
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query, Path, Body
 from pydantic import BaseModel, Field, validator
@@ -44,6 +44,9 @@ class LocationInfo(BaseModel):
 class HostMetadata(BaseModel):
     os: Optional[str] = Field(None, description="Operating system")
     purpose: Optional[str] = Field(None, description="Host purpose/description")
+    config_path: Optional[str] = Field(None, description="Relative path to monitoring config file")
+    config_generated_at: Optional[str] = Field(None, description="Timestamp when config was last generated")
+    config_services_count: Optional[int] = Field(None, description="Number of services in the generated config")
     tags: List[str] = Field(default_factory=list, description="Tags for categorization")
 
 
@@ -591,38 +594,35 @@ async def get_services_needing_attention():
 
 # ==================== CONFIG GENERATION ENDPOINT ====================
 
-@config_router.get("/generate", response_model=ApiResponse)
+@config_router.get("/generate/{host_id}", response_model=ApiResponse)
 async def generate_config(
-    environment: Optional[str] = Query(None, description="Filter by environment"),
-    region: Optional[str] = Query(None, description="Filter by region"),
-    enabled_only: bool = Query(True, description="Only include enabled services")
+    host_id: str = Path(..., description="Host identifier to generate config for"),
+    save_to_file: bool = Query(True, description="Save config to monitor/config/{host_id}_config.json")
 ):
-    """Generate config.json for monitoring script from database"""
+    """Generate config.json for a specific host and save to monitor/config directory"""
     try:
-        # Get all services with filters
+        # Check if host exists
+        host = host_operations.get_host(host_id)
+        if not host:
+            raise HTTPException(status_code=404, detail=f"Host '{host_id}' not found")
+
+        # Get all enabled services for this host
         services = service_operations.get_all_services(
-            environment=environment,
-            region=region,
-            enabled_only=enabled_only,
+            host_id=host_id,
+            enabled_only=True,
             limit=1000
         )
 
         if not services:
             return ApiResponse(
                 success=True,
-                message="No services found matching criteria",
+                message=f"No enabled services found for host '{host_id}'",
                 data={"targets": []}
             )
 
         # Build config targets
         targets = []
         for service in services:
-            # Get host information
-            host = host_operations.get_host(service["host_id"])
-            if not host:
-                logger.warning(f"Host not found for service: {service['service_id']}")
-                continue
-
             # Remove .service extension for config
             service_name_clean = service["service_name"].replace(".service", "")
 
@@ -651,29 +651,70 @@ async def generate_config(
 
         config = {"targets": targets}
 
+        # Save to file if requested
+        if save_to_file:
+            import os
+            config_dir = os.path.join(os.path.dirname(__file__), "..", "monitor", "config")
+            config_dir = os.path.abspath(config_dir)
+            config_path = os.path.join(config_dir, f"config.{host_id}.json")
+
+            os.makedirs(config_dir, exist_ok=True)
+
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+
+            # Calculate relative path from project root
+            relative_path = f"monitor/config/config.{host_id}.json"
+
+            # Update host metadata with config information
+            current_metadata = host.get("metadata", {})
+            current_metadata["config_path"] = relative_path
+            current_metadata["config_generated_at"] = datetime.now(timezone.utc).isoformat()
+            current_metadata["config_services_count"] = len(targets)
+
+            # Update host in database
+            update_success = host_operations.update_host(host_id, {"metadata": current_metadata})
+
+            if update_success:
+                logger.info(f"Config for host '{host_id}' saved to {config_path} and metadata updated")
+            else:
+                logger.warning(f"Config saved but failed to update host metadata for '{host_id}'")
+
+            return ApiResponse(
+                success=True,
+                message=f"Generated config for host '{host_id}' with {len(targets)} services and saved to {relative_path}",
+                data={
+                    "config": config,
+                    "relative_path": relative_path,
+                    "host_id": host_id,
+                    "services_count": len(targets),
+                    "metadata_updated": update_success
+                }
+            )
+
         return ApiResponse(
             success=True,
-            message=f"Generated config for {len(targets)} services",
+            message=f"Generated config for host '{host_id}' with {len(targets)} services",
             data=config
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error generating config: {e}")
+        logger.error(f"Error generating config for host '{host_id}': {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate config: {str(e)}")
 
 
-@config_router.get("/download")
+@config_router.get("/download/{host_id}")
 async def download_config(
-    environment: Optional[str] = Query(None, description="Filter by environment"),
-    region: Optional[str] = Query(None, description="Filter by region"),
-    enabled_only: bool = Query(True, description="Only include enabled services")
+    host_id: str = Path(..., description="Host identifier to download config for")
 ):
-    """Download config.json file"""
+    """Download config.json file for a specific host"""
     from fastapi.responses import Response
 
     try:
-        # Generate config
-        result = await generate_config(environment, region, enabled_only)
+        # Generate config without saving to file
+        result = await generate_config(host_id, save_to_file=False)
         config_data = result.data
 
         # Convert to JSON string
@@ -683,10 +724,10 @@ async def download_config(
             content=json_str,
             media_type="application/json",
             headers={
-                "Content-Disposition": "attachment; filename=config.json"
+                "Content-Disposition": f"attachment; filename={host_id}_config.json"
             }
         )
 
     except Exception as e:
-        logger.error(f"Error downloading config: {e}")
+        logger.error(f"Error downloading config for host '{host_id}': {e}")
         raise HTTPException(status_code=500, detail=f"Failed to download config: {str(e)}")
