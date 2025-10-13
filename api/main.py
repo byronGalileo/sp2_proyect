@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 import uvicorn
 
 from database import log_operations, LogLevel
+from api.routers import hosts_router, services_router, config_router, monitoring_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,10 +42,16 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Service Monitor API",
     description="REST API for service monitoring statistics and log management",
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Include new routers
+app.include_router(hosts_router)
+app.include_router(services_router)
+app.include_router(config_router)
+app.include_router(monitoring_router)
 
 # CORS middleware
 app.add_middleware(
@@ -93,15 +100,19 @@ async def root():
     """Root endpoint with API information"""
     return {
         "name": "Service Monitor API",
-        "version": "1.0.0",
-        "description": "REST API for service monitoring statistics and log management",
+        "version": "2.0.0",
+        "description": "REST API for service monitoring statistics, log management, and host/service configuration",
         "endpoints": {
             "health": "/health",
             "statistics": "/stats",
-            "services": "/services",
             "logs": "/logs",
             "unsent_logs": "/logs/unsent",
-            "mark_sent": "/logs/mark-sent"
+            "mark_sent": "/logs/mark-sent",
+            "hosts": "/hosts",
+            "services": "/services",
+            "config_generation": "/config/generate",
+            "config_download": "/config/download",
+            "documentation": "/docs"
         }
     }
 

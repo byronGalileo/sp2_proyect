@@ -84,6 +84,37 @@ class MongoConnection:
             events_collection.create_index("event_type")
             events_collection.create_index([("service_name", 1), ("timestamp", -1)])
 
+            # Hosts collection indexes (new)
+            hosts_collection = self._database['hosts']
+            hosts_collection.create_index("host_id", unique=True)
+            hosts_collection.create_index([("environment", 1), ("region", 1)])
+            hosts_collection.create_index("status")
+            hosts_collection.create_index("metadata.tags")
+            hosts_collection.create_index("ip_address")
+            hosts_collection.create_index("hostname")
+
+            # Services collection indexes (new)
+            services_collection = self._database['services']
+            services_collection.create_index("service_id", unique=True)
+            services_collection.create_index("host_id")
+            services_collection.create_index("service_type")
+            services_collection.create_index([("environment", 1), ("service_type", 1)])
+            services_collection.create_index("current_status")
+            services_collection.create_index([("monitoring.enabled", 1), ("current_status", 1)])
+            services_collection.create_index("region")
+            services_collection.create_index("tags")
+            services_collection.create_index("last_check")
+
+            # Monitoring history collection indexes (new)
+            monitoring_history_collection = self._database['monitoring_history']
+            monitoring_history_collection.create_index([("service_id", 1), ("timestamp", -1)])
+            monitoring_history_collection.create_index([("host_id", 1), ("timestamp", -1)])
+            monitoring_history_collection.create_index([("timestamp", -1)])
+            monitoring_history_collection.create_index([("status", 1), ("timestamp", -1)])
+            monitoring_history_collection.create_index([("check_type", 1), ("timestamp", -1)])
+            # TTL index for automatic document expiration (30 days)
+            monitoring_history_collection.create_index("expires_at", expireAfterSeconds=0)
+
             logger.info("Database indexes created successfully")
 
         except Exception as e:

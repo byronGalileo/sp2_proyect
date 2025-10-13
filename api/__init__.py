@@ -1,7 +1,8 @@
 """
 Service Monitor API
 
-REST API for exposing service monitoring statistics and managing log delivery status.
+REST API for exposing service monitoring statistics, log management,
+and host/service configuration management.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
