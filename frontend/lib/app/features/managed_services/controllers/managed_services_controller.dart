@@ -194,7 +194,7 @@ class ManagedServicesController extends GetxController {
     try {
       isLoading.value = true;
 
-      final newService = await _service.createService(
+      await _service.createService(
         serviceId: serviceId,
         hostId: hostId,
         serviceName: serviceName,
@@ -263,7 +263,7 @@ class ManagedServicesController extends GetxController {
     try {
       isLoading.value = true;
 
-      final response = await _service.updateService(
+      await _service.updateService(
         serviceId: serviceId,
         hostId: hostId,
         serviceName: serviceName,
@@ -280,12 +280,6 @@ class ManagedServicesController extends GetxController {
         status: status,
       );
 
-      // Update in list
-      final index = services.indexWhere((s) => s.serviceId == serviceId);
-      if (index != -1) {
-        services[index] = response.data;
-      }
-
       Get.snackbar(
         'Success',
         'Service updated successfully',
@@ -294,6 +288,8 @@ class ManagedServicesController extends GetxController {
         colorText: Colors.green[900],
       );
 
+      // Refresh service list and summary to get the updated data
+      await loadServices(refresh: true);
       await loadSummary();
       return true;
     } on ApiException catch (e) {

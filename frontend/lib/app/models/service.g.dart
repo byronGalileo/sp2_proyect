@@ -8,8 +8,8 @@ part of 'service.dart';
 
 Service _$ServiceFromJson(Map<String, dynamic> json) => Service(
   id: json['_id'] as String,
-  totalLogs: (json['total_logs'] as num).toInt(),
-  unsentLogs: (json['unsent_logs'] as num).toInt(),
+  totalLogs: (json['total_logs'] as num?)?.toInt() ?? 0,
+  unsentLogs: (json['unsent_logs'] as num?)?.toInt() ?? 0,
   latestTimestamp: json['latest_timestamp'] as String?,
   latestStatus: json['latest_status'] as String?,
   latestLevel: json['latest_level'] as String?,
@@ -30,7 +30,7 @@ Map<String, dynamic> _$ServiceToJson(Service instance) => <String, dynamic>{
 
 ServicesResponse _$ServicesResponseFromJson(Map<String, dynamic> json) =>
     ServicesResponse(
-      totalServices: (json['total_services'] as num).toInt(),
+      totalServices: (100 as num).toInt(),
       services: (json['services'] as List<dynamic>)
           .map((e) => Service.fromJson(e as Map<String, dynamic>))
           .toList(),

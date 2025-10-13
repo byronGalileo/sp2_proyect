@@ -124,7 +124,7 @@ MetadataListResponse _$MetadataListResponseFromJson(
 ) => MetadataListResponse(
   success: json['success'] as bool,
   message: json['message'] as String,
-  data: (json['data'] as List<dynamic>).map((e) => e as String).toList(),
+  data: MetadataListData.fromJson(json['data'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$MetadataListResponseToJson(
@@ -134,3 +134,19 @@ Map<String, dynamic> _$MetadataListResponseToJson(
   'message': instance.message,
   'data': instance.data,
 };
+
+MetadataListData _$MetadataListDataFromJson(Map<String, dynamic> json) =>
+    MetadataListData(
+      environments: (json['environments'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      regions: (json['regions'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+    );
+
+Map<String, dynamic> _$MetadataListDataToJson(MetadataListData instance) =>
+    <String, dynamic>{
+      'environments': instance.environments,
+      'regions': instance.regions,
+    };

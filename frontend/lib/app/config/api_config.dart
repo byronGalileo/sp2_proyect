@@ -21,7 +21,7 @@ class ApiEndpoints {
   static const String monitoring = '/monitoring';
 
   // Monitoring endpoints
-  static const String services = '/services';
+  static const String services = '/services_summary';
   static const String logs = '/logs';
 
   // Host endpoints

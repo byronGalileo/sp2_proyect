@@ -7,10 +7,10 @@ class Service {
   @JsonKey(name: '_id')
   final String id;
 
-  @JsonKey(name: 'total_logs')
+  @JsonKey(name: 'total_logs', defaultValue: 0)
   final int totalLogs;
 
-  @JsonKey(name: 'unsent_logs')
+  @JsonKey(name: 'unsent_logs', defaultValue: 0)
   final int unsentLogs;
 
   @JsonKey(name: 'latest_timestamp')

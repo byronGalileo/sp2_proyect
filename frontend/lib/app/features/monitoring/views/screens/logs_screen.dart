@@ -37,6 +37,7 @@ class LogsScreen extends StatelessWidget {
         _buildHeader(context, controller, showMenuButton: true),
         _buildFiltersBar(context, controller, isCompact: true),
         Expanded(child: _buildLogsContent(context, controller)),
+        _buildPagination(context, controller),
       ],
     );
   }
@@ -47,6 +48,7 @@ class LogsScreen extends StatelessWidget {
         _buildHeader(context, controller),
         _buildFiltersBar(context, controller),
         Expanded(child: _buildLogsContent(context, controller)),
+        _buildPagination(context, controller),
       ],
     );
   }
@@ -57,6 +59,7 @@ class LogsScreen extends StatelessWidget {
         _buildHeader(context, controller),
         _buildFiltersBar(context, controller),
         Expanded(child: _buildLogsContent(context, controller)),
+        _buildPagination(context, controller),
       ],
     );
   }
@@ -92,9 +95,9 @@ class LogsScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Obx(() {
-                  if (controller.total.value > 0) {
+                  if (controller.allLogs.isNotEmpty) {
                     return Text(
-                      '${controller.total.value} logs found',
+                      '${controller.allLogs.length} logs loaded',
                       style: Theme.of(context).textTheme.bodySmall,
                     );
                   }
@@ -268,8 +271,8 @@ class LogsScreen extends StatelessWidget {
     return Obx(() => DropdownButtonFormField<int>(
           value: controller.selectedLimit.value,
           decoration: const InputDecoration(
-            labelText: 'Limit',
-            prefixIcon: Icon(EvaIcons.options, size: 20),
+            labelText: 'Fetch Limit',
+            prefixIcon: Icon(EvaIcons.download, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
           ),
@@ -488,5 +491,69 @@ class LogsScreen extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+
+  Widget _buildPagination(BuildContext context, LogsController controller) {
+    return Obx(() {
+      if (controller.logs.isEmpty) return const SizedBox.shrink();
+
+      return Container(
+        padding: const EdgeInsets.all(AppConfig.padding),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).dividerColor,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Page size selector
+            Row(
+              children: [
+                const Text('Rows per page:'),
+                const SizedBox(width: 8),
+                DropdownButton<int>(
+                  value: controller.pageSize.value,
+                  underline: const SizedBox(),
+                  items: controller.pageSizeOptions.map((size) {
+                    return DropdownMenuItem<int>(
+                      value: size,
+                      child: Text('$size'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      controller.changePageSize(value);
+                    }
+                  },
+                ),
+              ],
+            ),
+            // Page info and navigation
+            Row(
+              children: [
+                Text(
+                  'Page ${controller.currentPageNumber} of ${controller.totalPages}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed:
+                      controller.hasPrevious ? controller.loadPreviousPage : null,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: controller.hasMore ? controller.loadNextPage : null,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
   }
 }

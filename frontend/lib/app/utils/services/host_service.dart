@@ -59,7 +59,7 @@ class HostService {
   }
 
   /// Create a new host
-  Future<HostResponse> createHost({
+  Future<void> createHost({
     required String hostId,
     required String hostname,
     required String ipAddress,
@@ -102,15 +102,14 @@ class HostService {
       body: body,
     );
 
-    return ApiResponseHandler.handleResponse<HostResponse>(
+    ApiResponseHandler.handleEmptyResponse(
       response,
-      parser: (json) => HostResponse.fromJson(json),
       operation: 'create',
     );
   }
 
   /// Update an existing host
-  Future<HostResponse> updateHost({
+  Future<void> updateHost({
     required String hostId,
     String? hostname,
     String? ipAddress,
@@ -159,9 +158,8 @@ class HostService {
       body: json.encode(body),
     );
 
-    return ApiResponseHandler.handleResponse<HostResponse>(
+    ApiResponseHandler.handleEmptyResponse(
       response,
-      parser: (json) => HostResponse.fromJson(json),
       operation: 'update',
     );
   }
@@ -200,9 +198,9 @@ class HostService {
       headers: {'Content-Type': 'application/json'},
     );
 
-    return ApiResponseHandler.handleResponse<MetadataListResponse>(
+    return ApiResponseHandler.handleResponse(
       response,
-      parser: (json) => MetadataListResponse.fromJson(json),
+      parser: (json) => MetadataListResponse.fromJson(json as Map<String, dynamic>),
       operation: 'fetch',
     );
   }
@@ -216,9 +214,9 @@ class HostService {
       headers: {'Content-Type': 'application/json'},
     );
 
-    return ApiResponseHandler.handleResponse<MetadataListResponse>(
+    return ApiResponseHandler.handleResponse(
       response,
-      parser: (json) => MetadataListResponse.fromJson(json),
+      parser: (json) => MetadataListResponse.fromJson(json as Map<String, dynamic>),
       operation: 'fetch',
     );
   }

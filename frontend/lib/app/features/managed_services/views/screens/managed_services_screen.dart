@@ -171,14 +171,27 @@ class ManagedServicesScreen extends StatelessWidget {
                               ),
                             ),
                             DataCell(
-                              Icon(
-                                service.monitoring.enabled
-                                    ? Icons.check_circle
-                                    : Icons.cancel,
-                                color: service.monitoring.enabled
-                                    ? Colors.green
-                                    : Colors.grey,
-                                size: 20,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: service.monitoring.enabled
+                                      ? Colors.green.withValues(alpha: 0.2)
+                                      : Colors.grey.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  service.monitoring.enabled ? 'Enabled' : 'Disabled',
+                                  style: TextStyle(
+                                    color: service.monitoring.enabled
+                                        ? Colors.green
+                                        : Colors.grey,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
                             ),
                             DataCell(
@@ -294,133 +307,205 @@ class ManagedServicesScreen extends StatelessWidget {
 
   Widget _buildFilters(
       BuildContext context, ManagedServicesController controller) {
-    return Container(
-      padding: const EdgeInsets.all(AppConfig.padding),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 900;
+        return Container(
+          padding: const EdgeInsets.all(AppConfig.padding),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+            ),
           ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(EvaIcons.funnelOutline, size: 18),
-              const SizedBox(width: 8),
-              const Text('Filters:'),
-              const Spacer(),
-              Obx(() {
-                if (controller.hasActiveFilters) {
-                  return TextButton.icon(
-                    onPressed: controller.clearFilters,
-                    icon: const Icon(Icons.clear, size: 16),
-                    label: const Text('Clear Filters'),
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Obx(() => _buildDropdownFilter(
-                    context,
-                    label: 'Service Type',
-                    value: controller.filterServiceType.value,
-                    items: ['All', ...controller.availableServiceTypes],
-                    onChanged: (value) {
-                      controller.setServiceTypeFilter(
-                        value == 'All' ? null : value,
-                      );
-                    },
-                  )),
-              Obx(() => _buildDropdownFilter(
-                    context,
-                    label: 'Environment',
-                    value: controller.filterEnvironment.value,
-                    items: ['All', ...controller.availableEnvironments],
-                    onChanged: (value) {
-                      controller.setEnvironmentFilter(
-                        value == 'All' ? null : value,
-                      );
-                    },
-                  )),
-              Obx(() => _buildDropdownFilter(
-                    context,
-                    label: 'Region',
-                    value: controller.filterRegion.value,
-                    items: ['All', ...controller.availableRegions],
-                    onChanged: (value) {
-                      controller.setRegionFilter(
-                        value == 'All' ? null : value,
-                      );
-                    },
-                  )),
-              Obx(() => _buildDropdownFilter(
-                    context,
-                    label: 'Status',
-                    value: controller.filterStatus.value,
-                    items: const [
-                      'All',
-                      'running',
-                      'stopped',
-                      'error',
-                      'unknown'
-                    ],
-                    onChanged: (value) {
-                      controller.setStatusFilter(
-                        value == 'All' ? null : value,
-                      );
-                    },
-                  )),
-              Obx(() => Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(
-                      '${controller.totalServices.value} services',
-                      style: Theme.of(context).textTheme.bodySmall,
+          child: isCompact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildServiceTypeFilter(controller),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildEnvironmentFilter(controller)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildRegionFilter(controller)),
+                      ],
                     ),
-                  )),
-            ],
-          ),
-        ],
-      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _buildStatusFilter(controller)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: controller.clearFilters,
+                            icon: const Icon(Icons.clear, size: 18),
+                            label: const Text('Clear'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[300],
+                              foregroundColor: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Obx(() => Text(
+                          '${controller.totalServices.value} services',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: _buildServiceTypeFilter(controller)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildEnvironmentFilter(controller)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildRegionFilter(controller)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildStatusFilter(controller)),
+                    const SizedBox(width: 12),
+                    Obx(() => Text(
+                          '${controller.totalServices.value} services',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: controller.clearFilters,
+                      icon: const Icon(Icons.clear, size: 18),
+                      label: const Text('Clear Filters'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+        );
+      },
     );
   }
 
-  Widget _buildDropdownFilter(
-    BuildContext context, {
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: DropdownButton<String>(
-        value: value ?? 'All',
-        underline: const SizedBox(),
-        isDense: true,
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text('$label: $item'),
-          );
-        }).toList(),
-        onChanged: onChanged,
-      ),
-    );
+  Widget _buildServiceTypeFilter(ManagedServicesController controller) {
+    return Obx(() => DropdownButtonFormField<String>(
+          value: controller.filterServiceType.value,
+          decoration: const InputDecoration(
+            labelText: 'Service Type',
+            prefixIcon: Icon(EvaIcons.cube, size: 20),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('All Types'),
+            ),
+            ...controller.availableServiceTypes.map((type) {
+              return DropdownMenuItem<String>(
+                value: type,
+                child: Text(type),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            controller.setServiceTypeFilter(value);
+          },
+        ));
+  }
+
+  Widget _buildEnvironmentFilter(ManagedServicesController controller) {
+    return Obx(() => DropdownButtonFormField<String>(
+          value: controller.filterEnvironment.value,
+          decoration: const InputDecoration(
+            labelText: 'Environment',
+            prefixIcon: Icon(EvaIcons.layersOutline, size: 20),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('All Environments'),
+            ),
+            ...controller.availableEnvironments.map((env) {
+              return DropdownMenuItem<String>(
+                value: env,
+                child: Text(env),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            controller.setEnvironmentFilter(value);
+          },
+        ));
+  }
+
+  Widget _buildRegionFilter(ManagedServicesController controller) {
+    return Obx(() => DropdownButtonFormField<String>(
+          value: controller.filterRegion.value,
+          decoration: const InputDecoration(
+            labelText: 'Region',
+            prefixIcon: Icon(EvaIcons.globe, size: 20),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('All Regions'),
+            ),
+            ...controller.availableRegions.map((region) {
+              return DropdownMenuItem<String>(
+                value: region,
+                child: Text(region),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            controller.setRegionFilter(value);
+          },
+        ));
+  }
+
+  Widget _buildStatusFilter(ManagedServicesController controller) {
+    return Obx(() => DropdownButtonFormField<String>(
+          value: controller.filterStatus.value,
+          decoration: const InputDecoration(
+            labelText: 'Status',
+            prefixIcon: Icon(EvaIcons.activityOutline, size: 20),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: const [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text('All Statuses'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'running',
+              child: Text('running'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'stopped',
+              child: Text('stopped'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'error',
+              child: Text('error'),
+            ),
+            DropdownMenuItem<String>(
+              value: 'unknown',
+              child: Text('unknown'),
+            ),
+          ],
+          onChanged: (value) {
+            controller.setStatusFilter(value);
+          },
+        ));
   }
 
   Widget _buildErrorState(

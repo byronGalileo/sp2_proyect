@@ -96,12 +96,12 @@ class HostsController extends GetxController {
       // Merge API data with defaults (remove duplicates)
       final allEnvironments = <String>{
         ...defaultEnvironments,
-        ...environments.data,
+        ...?environments.data.environments,
       }.toList();
 
       final allRegions = <String>{
         ...defaultRegions,
-        ...regions.data,
+        ...?regions.data.regions,
       }.toList();
 
       availableEnvironments.value = allEnvironments;
@@ -158,7 +158,7 @@ class HostsController extends GetxController {
     try {
       isLoading.value = true;
 
-      final newHost = await _hostService.createHost(
+      await _hostService.createHost(
         hostId: hostId,
         hostname: hostname,
         ipAddress: ipAddress,
@@ -224,7 +224,7 @@ class HostsController extends GetxController {
     try {
       isLoading.value = true;
 
-      final response = await _hostService.updateHost(
+      await _hostService.updateHost(
         hostId: hostId,
         hostname: hostname,
         ipAddress: ipAddress,
@@ -240,12 +240,6 @@ class HostsController extends GetxController {
         status: status,
       );
 
-      // Update in list
-      final index = hosts.indexWhere((h) => h.hostId == hostId);
-      if (index != -1) {
-        hosts[index] = response.data;
-      }
-
       Get.snackbar(
         'Success',
         'Host updated successfully',
@@ -254,6 +248,8 @@ class HostsController extends GetxController {
         colorText: Colors.green[900],
       );
 
+      // Refresh host list to get the updated data
+      await loadHosts(refresh: true);
       return true;
     } on ApiException catch (e) {
       Get.snackbar(

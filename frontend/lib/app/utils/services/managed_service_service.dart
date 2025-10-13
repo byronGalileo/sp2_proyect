@@ -73,7 +73,7 @@ class ManagedServiceService {
   }
 
   /// Create a new service
-  Future<ManagedServiceResponse> createService({
+  Future<void> createService({
     required String serviceId,
     required String hostId,
     required String serviceName,
@@ -112,15 +112,14 @@ class ManagedServiceService {
       body: body,
     );
 
-    return ApiResponseHandler.handleResponse<ManagedServiceResponse>(
+    ApiResponseHandler.handleEmptyResponse(
       response,
-      parser: (json) => ManagedServiceResponse.fromJson(json),
       operation: 'create',
     );
   }
 
   /// Update an existing service
-  Future<ManagedServiceResponse> updateService({
+  Future<void> updateService({
     required String serviceId,
     String? hostId,
     String? serviceName,
@@ -160,9 +159,8 @@ class ManagedServiceService {
       body: json.encode(body),
     );
 
-    return ApiResponseHandler.handleResponse<ManagedServiceResponse>(
+    ApiResponseHandler.handleEmptyResponse(
       response,
-      parser: (json) => ManagedServiceResponse.fromJson(json),
       operation: 'update',
     );
   }

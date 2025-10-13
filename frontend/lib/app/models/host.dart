@@ -176,7 +176,7 @@ class HostResponse {
 class MetadataListResponse {
   final bool success;
   final String message;
-  final List<String> data;
+  final MetadataListData data;
 
   MetadataListResponse({
     required this.success,
@@ -188,4 +188,20 @@ class MetadataListResponse {
       _$MetadataListResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$MetadataListResponseToJson(this);
+}
+
+@JsonSerializable()
+class MetadataListData {
+  final List<String>? environments;
+  final List<String>? regions;
+
+  MetadataListData({
+    this.environments,
+    this.regions,
+  });
+
+  factory MetadataListData.fromJson(Map<String, dynamic> json) =>
+      _$MetadataListDataFromJson(json);
+
+  Map<String, dynamic> toJson() => _$MetadataListDataToJson(this);
 }

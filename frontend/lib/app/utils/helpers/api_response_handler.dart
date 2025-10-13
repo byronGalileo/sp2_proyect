@@ -14,15 +14,13 @@ class ApiResponseHandler {
     try {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         // Success response
-        final dynamic decodedBody;
-
         if (response.body.isEmpty) {
-          decodedBody = null;
-        } else {
-          decodedBody = json.decode(response.body);
+          // If the parser can handle null, this will work.
+          // Useful for 204 No Content responses.
+          return parser(null);
         }
-
-        return parser(decodedBody);
+        final decodedBody = json.decode(response.body);
+        return parser(decodedBody); // The parser is responsible for handling the structure
       } else {
         // Error response
         _handleErrorResponse(response, operation);
@@ -31,8 +29,8 @@ class ApiResponseHandler {
     } on ApiException {
       rethrow;
     } catch (e) {
-      print(e);
-      print("Error RESPONSE: ${response.body}");
+      print('ERROR: ${e}');
+      print('Response: ${response.body}');
       throw ApiException.fromError(e);
     }
   }
@@ -77,14 +75,34 @@ class ApiResponseHandler {
     return handleResponse<List<T>>(
       response,
       parser: (json) {
-        if (json == null) return [];
-        if (json is! List) {
+        if (json == null) {
+          return [];
+        }
+
+        dynamic listData = json;
+
+        // Handle cases where the list is nested under a 'data' key,
+        // e.g., { "data": [...] } or { "data": { "environments": [...] } }
+        if (listData is Map<String, dynamic> && listData.containsKey('data')) {
+          listData = listData['data'];
+        }
+
+        // If 'data' was an object, look for a key that holds the list.
+        if (listData is Map<String, dynamic>) {
+          // Find the first value that is a list.
+          final listValue = listData.values.firstWhere((v) => v is List, orElse: () => null);
+          if (listValue != null) {
+            listData = listValue;
+          }
+        }
+
+        if (listData is! List) {
           throw ApiException(
             message: 'Invalid response format. Expected a list.',
-            details: 'Response: ${json.toString()}',
+            details: 'Response was not a list: ${listData.toString()}',
           );
         }
-        return json.map<T>((item) => itemParser(item)).toList();
+        return listData.map<T>((item) => itemParser(item)).toList();
       },
       operation: operation,
     );
