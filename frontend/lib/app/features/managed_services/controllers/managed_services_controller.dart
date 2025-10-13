@@ -194,7 +194,7 @@ class ManagedServicesController extends GetxController {
     try {
       isLoading.value = true;
 
-      await _service.createService(
+      final newService = await _service.createService(
         serviceId: serviceId,
         hostId: hostId,
         serviceName: serviceName,

@@ -9,8 +9,13 @@ import '../../controllers/managed_services_controller.dart';
 
 class ServiceFormDialog extends StatefulWidget {
   final ManagedService? service;
+  final String? preselectedHostId;
 
-  const ServiceFormDialog({super.key, this.service});
+  const ServiceFormDialog({
+    super.key,
+    this.service,
+    this.preselectedHostId,
+  });
 
   @override
   State<ServiceFormDialog> createState() => _ServiceFormDialogState();
@@ -87,11 +92,8 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
       _alertChannelsController.text = service.alerting.channels.join(', ');
       _alertSeverity = service.alerting.severity;
     } else {
-      // Set hostId from controller if coming from hosts screen
-      final controller = Get.find<ManagedServicesController>();
-      if (controller.hostId != null) {
-        _selectedHostId = controller.hostId;
-      }
+      // Pre-select host if an ID is passed to the dialog
+      _selectedHostId = widget.preselectedHostId;
     }
   }
 

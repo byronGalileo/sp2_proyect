@@ -158,7 +158,7 @@ class HostsController extends GetxController {
     try {
       isLoading.value = true;
 
-      await _hostService.createHost(
+      final newHost = await _hostService.createHost(
         hostId: hostId,
         hostname: hostname,
         ipAddress: ipAddress,

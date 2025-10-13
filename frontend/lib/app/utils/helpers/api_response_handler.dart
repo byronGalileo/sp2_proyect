@@ -31,6 +31,8 @@ class ApiResponseHandler {
     } on ApiException {
       rethrow;
     } catch (e) {
+      print(e);
+      print("Error RESPONSE: ${response.body}");
       throw ApiException.fromError(e);
     }
   }

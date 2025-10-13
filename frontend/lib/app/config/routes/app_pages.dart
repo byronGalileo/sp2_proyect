@@ -91,6 +91,7 @@ class AppPages {
       bindings: [
         DashboardBinding(),
         HostsBinding(),
+        ManagedServicesBinding(),
         AuthBinding(),
       ],
     ),

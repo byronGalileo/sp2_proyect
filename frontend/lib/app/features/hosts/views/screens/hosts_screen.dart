@@ -8,6 +8,7 @@ import '../../../../models/host.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/hosts_controller.dart';
 import '../widgets/host_card.dart';
+import '../../../managed_services/views/widgets/service_form_dialog.dart';
 import '../widgets/host_form_dialog.dart';
 import '../widgets/host_table.dart';
 
@@ -64,6 +65,7 @@ class HostsScreen extends StatelessWidget {
                     host: host,
                     onEdit: () => _showHostDialog(context, host: host),
                     onDelete: () => controller.deleteHost(hostId: host.hostId),
+                    onAddService: () => _showServiceDialog(context, host),
                   );
                 },
               ),
@@ -104,6 +106,7 @@ class HostsScreen extends StatelessWidget {
                   onEdit: (host) => _showHostDialog(context, host: host),
                   onDelete: (host) =>
                       controller.deleteHost(hostId: host.hostId),
+                  onAddService: (host) => _showServiceDialog(context, host),
                 ),
               ),
             );
@@ -143,6 +146,7 @@ class HostsScreen extends StatelessWidget {
                   onEdit: (host) => _showHostDialog(context, host: host),
                   onDelete: (host) =>
                       controller.deleteHost(hostId: host.hostId),
+                  onAddService: (host) => _showServiceDialog(context, host),
                 ),
               ),
             );
@@ -398,6 +402,13 @@ class HostsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => HostFormDialog(host: host),
+    );
+  }
+
+  void _showServiceDialog(BuildContext context, Host host) {
+    showDialog(
+      context: context,
+      builder: (context) => ServiceFormDialog(preselectedHostId: host.hostId),
     );
   }
 }

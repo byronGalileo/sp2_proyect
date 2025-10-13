@@ -8,6 +8,7 @@ class HostTable extends StatelessWidget {
   final List<Host> hosts;
   final Function(Host) onEdit;
   final Function(Host) onDelete;
+  final Function(Host) onAddService;
   final Function(Host)? onViewServices;
 
   const HostTable({
@@ -15,6 +16,7 @@ class HostTable extends StatelessWidget {
     required this.hosts,
     required this.onEdit,
     required this.onDelete,
+    required this.onAddService,
     this.onViewServices,
   });
 
@@ -138,6 +140,15 @@ class HostTable extends StatelessWidget {
                                 arguments: {'hostId': host.hostId}),
                         tooltip: 'View Services',
                         color: Colors.blue,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(EvaIcons.plusCircleOutline, size: 16),
+                        onPressed: () => onAddService(host),
+                        tooltip: 'Add Service',
+                        color: Colors.green,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
