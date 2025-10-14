@@ -57,6 +57,7 @@ class CreateHostRequest(BaseModel):
     environment: str = Field("production", description="Environment (dev/staging/production)")
     region: str = Field("default", description="Region or datacenter")
     ssh_config: SSHConfig
+    log_file: Optional[str] = Field(None, description="Log file path for monitoring (default: logs/{host_id}_monitor.log)")
     location: Optional[LocationInfo] = None
     metadata: Optional[HostMetadata] = None
     status: str = Field("active", description="Host status")
@@ -68,6 +69,7 @@ class UpdateHostRequest(BaseModel):
     environment: Optional[str] = Field(None, description="Environment")
     region: Optional[str] = Field(None, description="Region")
     ssh_config: Optional[SSHConfig] = None
+    log_file: Optional[str] = Field(None, description="Log file path for monitoring")
     location: Optional[LocationInfo] = None
     metadata: Optional[HostMetadata] = None
     status: Optional[str] = Field(None, description="Host status")
@@ -161,6 +163,7 @@ async def create_host(request: CreateHostRequest):
             ssh_port=request.ssh_config.port,
             ssh_key_path=request.ssh_config.key_path,
             use_sudo=request.ssh_config.use_sudo,
+            log_file=request.log_file,
             location=request.location.dict() if request.location else {},
             metadata=request.metadata.dict() if request.metadata else {"tags": []},
             status=HostStatus(request.status)
@@ -259,6 +262,8 @@ async def update_host(
             update_data["region"] = request.region
         if request.ssh_config:
             update_data["ssh_config"] = request.ssh_config.dict()
+        if request.log_file:
+            update_data["log_file"] = request.log_file
         if request.location:
             update_data["location"] = request.location.dict()
         if request.metadata:
@@ -630,26 +635,33 @@ async def generate_config(
             recovery = service.get("recovery", {})
 
             target = {
+                "host": host["hostname"],  # Use hostname instead of ip_address
                 "name": service.get("display_name", service_name_clean),
-                "host": host["ip_address"],
-                "service": service_name_clean,
-                "ssh": {
-                    "user": host["ssh_config"]["user"],
-                    "port": host["ssh_config"]["port"]
-                },
                 "method": monitoring.get("method", "ssh"),
+                "service": service["service_name"],  # Keep the full service name with .service extension
                 "interval_sec": monitoring.get("interval_sec", 60),
                 "recover_on_down": recovery.get("recover_on_down", False),
-                "recover_action": recovery.get("recover_action", "restart")
+                "recover_action": recovery.get("recover_action", "restart"),
+                "timeout_sec": monitoring.get("timeout_sec", 30),
+                "active": monitoring.get("enabled", True),
+                "use_sudo": host["ssh_config"].get("use_sudo", False)
             }
 
-            # Add optional fields if present
-            if host["ssh_config"].get("use_sudo"):
-                target["use_sudo"] = True
+            # Add SSH config only if method is ssh
+            if monitoring.get("method", "ssh") == "ssh":
+                target["ssh"] = {
+                    "user": host["ssh_config"]["user"],
+                    "port": host["ssh_config"]["port"]
+                }
 
             targets.append(target)
 
-        config = {"targets": targets}
+        # Build complete config structure
+        config = {
+            "log_file": host.get("log_file", f"logs/{host_id}_monitor.log"),
+            "log_level": "INFO",
+            "targets": targets
+        }
 
         # Save to file if requested
         if save_to_file:
@@ -731,3 +743,341 @@ async def download_config(
     except Exception as e:
         logger.error(f"Error downloading config for host '{host_id}': {e}")
         raise HTTPException(status_code=500, detail=f"Failed to download config: {str(e)}")
+
+
+# ==================== MONITOR MANAGEMENT ENDPOINTS ====================
+
+import subprocess
+import os
+import psutil
+import signal
+import time
+from threading import Lock
+
+# Global variables for process management
+monitor_processes = {}  # {config_name: process_info}
+process_lock = Lock()
+
+class MonitorProcessInfo:
+    def __init__(self, config_name: str, config_path: str, process: subprocess.Popen):
+        self.config_name = config_name
+        self.config_path = config_path
+        self.process = process
+        self.start_time = datetime.now(timezone.utc)
+        self.restart_count = 0
+
+class MonitorControlRequest(BaseModel):
+    action: str = Field(..., description="Action to perform: start, stop, restart")
+    config_name: str = Field(..., description="Configuration name (e.g., 'config.local')")
+
+class MonitorStatus(BaseModel):
+    config_name: str
+    config_path: str
+    is_running: bool
+    pid: Optional[int] = None
+    start_time: Optional[datetime] = None
+    restart_count: int = 0
+    memory_usage_mb: Optional[float] = None
+    cpu_percent: Optional[float] = None
+
+def get_config_path(config_name: str) -> str:
+    """Get the full path to a config file"""
+    # Remove .json extension if present
+    if config_name.endswith('.json'):
+        config_name = config_name[:-5]
+
+    # Add config prefix if not present
+    if not config_name.startswith('config.'):
+        config_name = f"config.{config_name}"
+
+    # Get project root and construct path
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    config_path = os.path.join(project_root, "monitor", "config", f"{config_name}.json")
+
+    if not os.path.exists(config_path):
+        raise HTTPException(status_code=404, detail=f"Config file not found: {config_path}")
+
+    return config_path
+
+def get_monitor_script_path() -> str:
+    """Get the path to the run_monitor.sh script"""
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    script_path = os.path.join(project_root, "monitor", "run_monitor.sh")
+
+    if not os.path.exists(script_path):
+        raise HTTPException(status_code=500, detail=f"Monitor script not found: {script_path}")
+
+    return script_path
+
+def is_process_running(pid: int) -> bool:
+    """Check if a process is still running"""
+    try:
+        return psutil.pid_exists(pid) and psutil.Process(pid).is_running()
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return False
+
+def get_process_stats(pid: int) -> Dict[str, Any]:
+    """Get process statistics"""
+    try:
+        process = psutil.Process(pid)
+        if not process.is_running():
+            return {}
+
+        memory_info = process.memory_info()
+        return {
+            "memory_usage_mb": memory_info.rss / 1024 / 1024,
+            "cpu_percent": process.cpu_percent(interval=0.1)
+        }
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        return {}
+
+@monitoring_router.get("/status", response_model=ApiResponse)
+async def get_all_monitor_status():
+    """Get status of all monitors"""
+    try:
+        with process_lock:
+            statuses = []
+
+            # Clean up dead processes
+            dead_configs = []
+            for config_name, process_info in monitor_processes.items():
+                if not is_process_running(process_info.process.pid):
+                    dead_configs.append(config_name)
+
+            for config_name in dead_configs:
+                del monitor_processes[config_name]
+
+            # Get status for all running monitors
+            for config_name, process_info in monitor_processes.items():
+                stats = get_process_stats(process_info.process.pid)
+
+                status = MonitorStatus(
+                    config_name=config_name,
+                    config_path=process_info.config_path,
+                    is_running=True,
+                    pid=process_info.process.pid,
+                    start_time=process_info.start_time,
+                    restart_count=process_info.restart_count,
+                    memory_usage_mb=stats.get("memory_usage_mb"),
+                    cpu_percent=stats.get("cpu_percent")
+                )
+                statuses.append(status.dict())
+
+        return ApiResponse(
+            success=True,
+            message=f"Retrieved status for {len(statuses)} monitors",
+            data={"monitors": statuses, "count": len(statuses)}
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting monitor status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get monitor status: {str(e)}")
+
+@monitoring_router.get("/status/{config_name}", response_model=ApiResponse)
+async def get_monitor_status(config_name: str = Path(..., description="Configuration name")):
+    """Get status of a specific monitor"""
+    try:
+        with process_lock:
+            process_info = monitor_processes.get(config_name)
+
+            if not process_info:
+                return ApiResponse(
+                    success=True,
+                    message=f"Monitor '{config_name}' is not running",
+                    data={"is_running": False, "config_name": config_name}
+                )
+
+            # Check if process is still alive
+            if not is_process_running(process_info.process.pid):
+                del monitor_processes[config_name]
+                return ApiResponse(
+                    success=True,
+                    message=f"Monitor '{config_name}' is not running",
+                    data={"is_running": False, "config_name": config_name}
+                )
+
+            stats = get_process_stats(process_info.process.pid)
+
+            status = MonitorStatus(
+                config_name=config_name,
+                config_path=process_info.config_path,
+                is_running=True,
+                pid=process_info.process.pid,
+                start_time=process_info.start_time,
+                restart_count=process_info.restart_count,
+                memory_usage_mb=stats.get("memory_usage_mb"),
+                cpu_percent=stats.get("cpu_percent")
+            )
+
+        return ApiResponse(
+            success=True,
+            message=f"Status retrieved for monitor '{config_name}'",
+            data=status.dict()
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting monitor status for '{config_name}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get monitor status: {str(e)}")
+
+@monitoring_router.post("/control", response_model=ApiResponse)
+async def control_monitor(request: MonitorControlRequest):
+    """Control monitor: start, stop, or restart"""
+    try:
+        action = request.action.lower()
+        config_name = request.config_name
+
+        if action not in ['start', 'stop', 'restart']:
+            raise HTTPException(status_code=400, detail="Action must be 'start', 'stop', or 'restart'")
+
+        with process_lock:
+            current_process = monitor_processes.get(config_name)
+
+            # Stop existing process if needed
+            if current_process and action in ['stop', 'restart']:
+                try:
+                    if is_process_running(current_process.process.pid):
+                        # Try graceful termination first
+                        current_process.process.terminate()
+
+                        # Wait up to 5 seconds for graceful shutdown
+                        for _ in range(50):
+                            if not is_process_running(current_process.process.pid):
+                                break
+                            time.sleep(0.1)
+
+                        # Force kill if still running
+                        if is_process_running(current_process.process.pid):
+                            current_process.process.kill()
+                            time.sleep(0.5)
+
+                    del monitor_processes[config_name]
+                    logger.info(f"Stopped monitor '{config_name}'")
+
+                except Exception as e:
+                    logger.warning(f"Error stopping monitor '{config_name}': {e}")
+
+            # Start process if needed
+            if action in ['start', 'restart']:
+                if current_process and is_process_running(current_process.process.pid):
+                    raise HTTPException(status_code=409, detail=f"Monitor '{config_name}' is already running")
+
+                # Get config path
+                config_path = get_config_path(config_name)
+                script_path = get_monitor_script_path()
+
+                # Start the monitor process
+                try:
+                    process = subprocess.Popen(
+                        [script_path, "--config", config_path],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        preexec_fn=os.setsid  # Create new process group
+                    )
+
+                    # Wait a moment to check if it started successfully
+                    time.sleep(1)
+                    if process.poll() is not None:
+                        # Process died immediately
+                        stdout, stderr = process.communicate()
+                        error_msg = stderr.decode() if stderr else stdout.decode()
+                        raise HTTPException(status_code=500, detail=f"Monitor failed to start: {error_msg}")
+
+                    # Create process info
+                    process_info = MonitorProcessInfo(config_name, config_path, process)
+                    if action == 'restart' and current_process:
+                        process_info.restart_count = current_process.restart_count + 1
+
+                    monitor_processes[config_name] = process_info
+
+                    logger.info(f"Started monitor '{config_name}' with PID {process.pid}")
+
+                except Exception as e:
+                    logger.error(f"Failed to start monitor '{config_name}': {e}")
+                    raise HTTPException(status_code=500, detail=f"Failed to start monitor: {str(e)}")
+
+        # Return appropriate response
+        if action == 'start':
+            return ApiResponse(
+                success=True,
+                message=f"Monitor '{config_name}' started successfully",
+                data={"config_name": config_name, "action": action, "pid": process.pid}
+            )
+        elif action == 'stop':
+            return ApiResponse(
+                success=True,
+                message=f"Monitor '{config_name}' stopped successfully",
+                data={"config_name": config_name, "action": action}
+            )
+        else:  # restart
+            return ApiResponse(
+                success=True,
+                message=f"Monitor '{config_name}' restarted successfully",
+                data={"config_name": config_name, "action": action, "pid": process.pid}
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error controlling monitor '{request.config_name}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to control monitor: {str(e)}")
+
+@monitoring_router.post("/start/{config_name}", response_model=ApiResponse)
+async def start_monitor(config_name: str = Path(..., description="Configuration name")):
+    """Start a specific monitor"""
+    request = MonitorControlRequest(action="start", config_name=config_name)
+    return await control_monitor(request)
+
+@monitoring_router.post("/stop/{config_name}", response_model=ApiResponse)
+async def stop_monitor(config_name: str = Path(..., description="Configuration name")):
+    """Stop a specific monitor"""
+    request = MonitorControlRequest(action="stop", config_name=config_name)
+    return await control_monitor(request)
+
+@monitoring_router.post("/restart/{config_name}", response_model=ApiResponse)
+async def restart_monitor(config_name: str = Path(..., description="Configuration name")):
+    """Restart a specific monitor"""
+    request = MonitorControlRequest(action="restart", config_name=config_name)
+    return await control_monitor(request)
+
+@monitoring_router.get("/configs", response_model=ApiResponse)
+async def list_available_configs():
+    """List all available configuration files"""
+    try:
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_dir = os.path.join(project_root, "monitor", "config")
+
+        if not os.path.exists(config_dir):
+            return ApiResponse(
+                success=True,
+                message="No config directory found",
+                data={"configs": [], "count": 0}
+            )
+
+        configs = []
+        for filename in os.listdir(config_dir):
+            if filename.endswith('.json'):
+                config_name = filename[:-5]  # Remove .json extension
+                config_path = os.path.join(config_dir, filename)
+
+                # Get file stats
+                stat = os.stat(config_path)
+                configs.append({
+                    "config_name": config_name,
+                    "filename": filename,
+                    "path": config_path,
+                    "size_bytes": stat.st_size,
+                    "modified_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
+                    "is_running": config_name in monitor_processes
+                })
+
+        configs.sort(key=lambda x: x["config_name"])
+
+        return ApiResponse(
+            success=True,
+            message=f"Found {len(configs)} configuration files",
+            data={"configs": configs, "count": len(configs)}
+        )
+
+    except Exception as e:
+        logger.error(f"Error listing configs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to list configs: {str(e)}")

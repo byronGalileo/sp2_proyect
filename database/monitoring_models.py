@@ -63,6 +63,7 @@ class Host:
         ssh_port: int = 22,
         ssh_key_path: Optional[str] = None,
         use_sudo: bool = False,
+        log_file: Optional[str] = None,
         location: Optional[Dict[str, Any]] = None,
         metadata: Optional[Dict[str, Any]] = None,
         status: HostStatus = HostStatus.ACTIVE,
@@ -79,6 +80,7 @@ class Host:
         self.ssh_port = ssh_port
         self.ssh_key_path = ssh_key_path
         self.use_sudo = use_sudo
+        self.log_file = log_file or f"logs/{host_id}_monitor.log"
         self.location = location or {}
         self.metadata = metadata or {"tags": []}
         self.status = status
@@ -94,6 +96,7 @@ class Host:
             "ip_address": self.ip_address,
             "environment": self.environment,
             "region": self.region,
+            "log_file": self.log_file,
             "location": self.location,
             "ssh_config": {
                 "user": self.ssh_user,
@@ -122,6 +125,7 @@ class Host:
             ssh_port=ssh_config.get("port", 22),
             ssh_key_path=ssh_config.get("key_path"),
             use_sudo=ssh_config.get("use_sudo", False),
+            log_file=doc.get("log_file"),
             location=doc.get("location", {}),
             metadata=doc.get("metadata", {}),
             status=HostStatus(doc.get("status", "active")),

@@ -13,7 +13,7 @@ log delivery status. Provides endpoints to:
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict, Any
 import logging
 
@@ -112,6 +112,9 @@ async def root():
             "services": "/services",
             "config_generation": "/config/generate",
             "config_download": "/config/download",
+            "monitor_status": "/monitoring/status",
+            "monitor_control": "/monitoring/control",
+            "monitor_configs": "/monitoring/configs",
             "documentation": "/docs"
         }
     }
@@ -125,7 +128,7 @@ async def health_check():
 
         return {
             "status": "healthy" if connection_healthy else "unhealthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "database": {
                 "connected": connection_healthy,
                 "database_name": log_operations.connection.config.database_name,
@@ -220,7 +223,7 @@ async def get_logs(
         if service_name:
             logs = log_operations.get_recent_logs(service_name, hours=hours, limit=limit)
         else:
-            end_time = datetime.utcnow()
+            end_time = datetime.now(timezone.utc)
             start_time = end_time - timedelta(hours=hours)
             logs = log_operations.get_logs(
                 log_level=level_filter,

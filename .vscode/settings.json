@@ -1,5 +1,7 @@
 {
     "conventionalCommits.scopes": [
-        "Monitor"
+        "Monitor",
+        "Flutter",
+        "beagle-api"
     ]
 }
