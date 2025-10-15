@@ -4,6 +4,7 @@ FastAPI routers for Hosts and Services management
 
 import json
 import logging
+import re
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query, Path, Body
@@ -24,6 +25,32 @@ hosts_router = APIRouter(prefix="/hosts", tags=["Hosts"])
 services_router = APIRouter(prefix="/services", tags=["Services"])
 config_router = APIRouter(prefix="/config", tags=["Configuration"])
 monitoring_router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
+
+
+# ==================== UTILITY FUNCTIONS ====================
+
+def generate_id_from_name(name: str) -> str:
+    """
+    Generate a safe ID from a name by:
+    - Converting to lowercase
+    - Replacing spaces and special chars with underscores
+    - Removing consecutive underscores
+
+    Args:
+        name: The name to convert to an ID
+
+    Returns:
+        A safe identifier string
+    """
+    # Convert to lowercase
+    safe_id = name.lower()
+    # Replace spaces and special characters with underscores
+    safe_id = re.sub(r'[^a-z0-9]+', '_', safe_id)
+    # Remove leading/trailing underscores
+    safe_id = safe_id.strip('_')
+    # Replace consecutive underscores with single underscore
+    safe_id = re.sub(r'_+', '_', safe_id)
+    return safe_id
 
 
 # ==================== PYDANTIC MODELS ====================
@@ -51,7 +78,7 @@ class HostMetadata(BaseModel):
 
 
 class CreateHostRequest(BaseModel):
-    host_id: str = Field(..., description="Unique host identifier", min_length=1)
+    host_id: Optional[str] = Field(None, description="Unique host identifier (auto-generated from hostname if not provided)")
     hostname: str = Field(..., description="Hostname", min_length=1)
     ip_address: str = Field(..., description="IP address")
     environment: str = Field("production", description="Environment (dev/staging/production)")
@@ -100,7 +127,7 @@ class AlertingConfig(BaseModel):
 
 
 class CreateServiceRequest(BaseModel):
-    service_id: str = Field(..., description="Unique service identifier", min_length=1)
+    service_id: Optional[str] = Field(None, description="Unique service identifier (auto-generated from host_id and service_name if not provided)")
     host_id: str = Field(..., description="Host identifier", min_length=1)
     service_name: str = Field(..., description="Service name (e.g., mysql.service)", min_length=1)
     service_type: str = Field(..., description="Service type (e.g., mysql, nginx)", min_length=1)
@@ -148,13 +175,19 @@ class ApiResponse(BaseModel):
 async def create_host(request: CreateHostRequest):
     """Create a new host"""
     try:
+        # Auto-generate host_id from hostname if not provided
+        host_id = request.host_id
+        if not host_id:
+            host_id = generate_id_from_name(request.hostname)
+            logger.info("Auto-generated host_id '{}' from hostname '{}'".format(host_id, request.hostname))
+
         # Check if host already exists
-        if host_operations.host_exists(request.host_id):
-            raise HTTPException(status_code=409, detail=f"Host with ID '{request.host_id}' already exists")
+        if host_operations.host_exists(host_id):
+            raise HTTPException(status_code=409, detail="Host with ID '{}' already exists".format(host_id))
 
         # Create Host object
         host = Host(
-            host_id=request.host_id,
+            host_id=host_id,
             hostname=request.hostname,
             ip_address=request.ip_address,
             environment=request.environment,
@@ -170,13 +203,13 @@ async def create_host(request: CreateHostRequest):
         )
 
         # Save to database
-        host_id = host_operations.create_host(host)
+        created_host_id = host_operations.create_host(host)
 
-        if host_id:
+        if created_host_id:
             return ApiResponse(
                 success=True,
-                message=f"Host '{host_id}' created successfully",
-                data={"host_id": host_id}
+                message="Host '{}' created successfully".format(created_host_id),
+                data={"host_id": created_host_id}
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create host")
@@ -184,8 +217,8 @@ async def create_host(request: CreateHostRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating host: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create host: {str(e)}")
+        logger.error("Error creating host: {}".format(e))
+        raise HTTPException(status_code=500, detail="Failed to create host: {}".format(str(e)))
 
 
 @hosts_router.get("", response_model=ApiResponse)
@@ -359,13 +392,22 @@ async def get_regions():
 async def create_service(request: CreateServiceRequest):
     """Create a new service"""
     try:
-        # Check if service already exists
-        if service_operations.service_exists(request.service_id):
-            raise HTTPException(status_code=409, detail=f"Service with ID '{request.service_id}' already exists")
-
         # Check if host exists
         if not host_operations.host_exists(request.host_id):
-            raise HTTPException(status_code=404, detail=f"Host '{request.host_id}' not found")
+            raise HTTPException(status_code=404, detail="Host '{}' not found".format(request.host_id))
+
+        # Auto-generate service_id from host_id and service_name if not provided
+        service_id = request.service_id
+        if not service_id:
+            # Remove .service extension for ID generation
+            service_name_clean = request.service_name.replace('.service', '')
+            service_id = "{}_{}".format(request.host_id, generate_id_from_name(service_name_clean))
+            logger.info("Auto-generated service_id '{}' from host_id '{}' and service_name '{}'".format(
+                service_id, request.host_id, request.service_name))
+
+        # Check if service already exists
+        if service_operations.service_exists(service_id):
+            raise HTTPException(status_code=409, detail="Service with ID '{}' already exists".format(service_id))
 
         # Get host to inherit environment and region if not specified
         host = host_operations.get_host(request.host_id)
@@ -376,7 +418,7 @@ async def create_service(request: CreateServiceRequest):
         alerting = request.alerting or AlertingConfig()
 
         service = Service(
-            service_id=request.service_id,
+            service_id=service_id,
             host_id=request.host_id,
             service_name=request.service_name,
             service_type=request.service_type,
@@ -404,13 +446,13 @@ async def create_service(request: CreateServiceRequest):
         )
 
         # Save to database
-        service_id = service_operations.create_service(service)
+        created_service_id = service_operations.create_service(service)
 
-        if service_id:
+        if created_service_id:
             return ApiResponse(
                 success=True,
-                message=f"Service '{service_id}' created successfully",
-                data={"service_id": service_id}
+                message="Service '{}' created successfully".format(created_service_id),
+                data={"service_id": created_service_id}
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create service")
@@ -418,8 +460,8 @@ async def create_service(request: CreateServiceRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating service: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create service: {str(e)}")
+        logger.error("Error creating service: {}".format(e))
+        raise HTTPException(status_code=500, detail="Failed to create service: {}".format(str(e)))
 
 
 @services_router.get("", response_model=ApiResponse)
