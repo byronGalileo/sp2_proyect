@@ -29,7 +29,7 @@ class MongoConnection:
         """Establish connection to MongoDB"""
         try:
             if self._client is None:
-                logger.info(f"Connecting to MongoDB at {self.config.connection_string}")
+                # logger.info(f"Connecting to MongoDB at {self.config.connection_string}")
                 self._client = MongoClient(
                     self.config.connection_string,
                     **self.config.connection_options

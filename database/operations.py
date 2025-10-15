@@ -7,6 +7,53 @@ from .models import LogEntry, EventEntry, LogLevel, ServiceStatus
 
 logger = logging.getLogger(__name__)
 
+# Guatemala timezone offset (GMT-6)
+GUATEMALA_UTC_OFFSET = timedelta(hours=-6)
+
+
+def convert_utc_to_guatemala(utc_dt):
+    """
+    Convert UTC datetime to Guatemala time (GMT-6)
+
+    Args:
+        utc_dt: datetime object in UTC
+
+    Returns:
+        datetime object in Guatemala time
+    """
+    if utc_dt is None:
+        return None
+
+    if isinstance(utc_dt, datetime):
+        return utc_dt + GUATEMALA_UTC_OFFSET
+
+    return utc_dt
+
+
+def convert_timestamps_in_results(results):
+    """
+    Convert timestamp fields from UTC to Guatemala time in result documents
+
+    Args:
+        results: List of dictionaries containing log entries
+
+    Returns:
+        List with converted timestamps
+    """
+    for result in results:
+        if 'timestamp' in result and isinstance(result['timestamp'], datetime):
+            result['timestamp'] = convert_utc_to_guatemala(result['timestamp'])
+
+        # Also convert other datetime fields if present
+        if 'created_at' in result and isinstance(result['created_at'], datetime):
+            result['created_at'] = convert_utc_to_guatemala(result['created_at'])
+
+        if 'updated_at' in result and isinstance(result['updated_at'], datetime):
+            result['updated_at'] = convert_utc_to_guatemala(result['updated_at'])
+
+    return results
+
+
 class LogOperations:
     """MongoDB operations for logging system"""
 
@@ -95,7 +142,7 @@ class LogOperations:
         limit: int = 100,
         skip: int = 0
     ) -> List[Dict[str, Any]]:
-        """Query logs with various filters"""
+        """Query logs with various filters. Timestamps are returned in Guatemala time (GMT-6)"""
         try:
             collection = self.connection.logs_collection
             if collection is None:
@@ -126,14 +173,17 @@ class LogOperations:
             cursor = collection.find(query_filter).sort('timestamp', -1).skip(skip).limit(limit)
             results = list(cursor)
 
-            logger.debug(f"Retrieved {len(results)} log entries")
+            # Convert timestamps from UTC to Guatemala time
+            results = convert_timestamps_in_results(results)
+
+            logger.debug("Retrieved {} log entries".format(len(results)))
             return results
 
         except PyMongoError as e:
-            logger.error(f"MongoDB error querying logs: {e}")
+            logger.error("MongoDB error querying logs: {}".format(e))
             return []
         except Exception as e:
-            logger.error(f"Unexpected error querying logs: {e}")
+            logger.error("Unexpected error querying logs: {}".format(e))
             return []
 
     def get_recent_logs(self, service_name: str, hours: int = 24, limit: int = 100) -> List[Dict[str, Any]]:
@@ -238,7 +288,7 @@ class LogOperations:
         log_level: Optional[LogLevel] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """Get logs that haven't been sent to user yet"""
+        """Get logs that haven't been sent to user yet. Timestamps are returned in Guatemala time (GMT-6)"""
         try:
             collection = self.connection.logs_collection
             if collection is None:
@@ -258,14 +308,17 @@ class LogOperations:
             cursor = collection.find(query_filter).sort('timestamp', -1).limit(limit)
             results = list(cursor)
 
-            logger.debug(f"Retrieved {len(results)} unsent log entries")
+            # Convert timestamps from UTC to Guatemala time
+            results = convert_timestamps_in_results(results)
+
+            logger.debug("Retrieved {} unsent log entries".format(len(results)))
             return results
 
         except PyMongoError as e:
-            logger.error(f"MongoDB error querying unsent logs: {e}")
+            logger.error("MongoDB error querying unsent logs: {}".format(e))
             return []
         except Exception as e:
-            logger.error(f"Unexpected error querying unsent logs: {e}")
+            logger.error("Unexpected error querying unsent logs: {}".format(e))
             return []
 
     def mark_logs_as_sent(self, log_ids: List[str]) -> int:
