@@ -751,6 +751,7 @@ import subprocess
 import os
 import psutil
 import signal
+import traceback
 import time
 from threading import Lock
 
@@ -966,6 +967,11 @@ async def control_monitor(request: MonitorControlRequest):
                 script_path = get_monitor_script_path()
 
                 # Start the monitor process
+                logger.info(f"Launching monitor: {script_path} --config {config_path}")
+                logger.info(f"Exists script? {os.path.exists(script_path)}")
+                logger.info(f"Exists config? {os.path.exists(config_path)}")
+                logger.info(f"CWD: {os.getcwd()}")
+
                 try:
                     process = subprocess.Popen(
                         [script_path, "--config", config_path],
@@ -992,9 +998,8 @@ async def control_monitor(request: MonitorControlRequest):
                     logger.info(f"Started monitor '{config_name}' with PID {process.pid}")
 
                 except Exception as e:
-                    logger.error(f"Failed to start monitor '{config_name}': {e}")
+                    logger.error(f"Failed to start monitor '{config_name}': {traceback.format_exc()}")
                     raise HTTPException(status_code=500, detail=f"Failed to start monitor: {str(e)}")
-
         # Return appropriate response
         if action == 'start':
             return ApiResponse(
