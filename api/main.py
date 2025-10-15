@@ -190,7 +190,7 @@ async def get_service_statistics(
         raise HTTPException(status_code=500, detail=f"Failed to get service statistics: {str(e)}")
 
 # Services endpoints
-@app.get("/services", response_model=Dict[str, Any])
+@app.get("/services_summary", response_model=Dict[str, Any])
 async def get_services_summary():
     """Get summary of all monitored services"""
     try:
