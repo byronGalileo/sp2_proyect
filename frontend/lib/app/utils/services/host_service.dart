@@ -240,4 +240,55 @@ class HostService {
       );
     }
   }
+
+  /// Start monitoring execution for a host
+  /// Extracts config filename from config_path and starts the monitor
+  Future<Map<String, dynamic>> startExecution(String configName) async {
+    final response = await http.post(
+      Uri.parse(
+        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStart}/$configName',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+      response,
+      parser: (json) => json as Map<String, dynamic>,
+      operation: 'start monitoring',
+    );
+  }
+
+  /// Stop monitoring execution for a host
+  /// Stops the running monitor process
+  Future<Map<String, dynamic>> stopExecution(String configName) async {
+    final response = await http.post(
+      Uri.parse(
+        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStop}/$configName',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+      response,
+      parser: (json) => json as Map<String, dynamic>,
+      operation: 'stop monitoring',
+    );
+  }
+
+  /// Get monitoring execution status for a host
+  /// Returns whether the monitor is currently running
+  Future<Map<String, dynamic>> getExecutionStatus(String configName) async {
+    final response = await http.get(
+      Uri.parse(
+        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStatus}/$configName',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
+      response,
+      parser: (json) => json as Map<String, dynamic>,
+      operation: 'check monitoring status',
+    );
+  }
 }

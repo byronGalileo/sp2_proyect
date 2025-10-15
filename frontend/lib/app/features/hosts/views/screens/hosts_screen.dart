@@ -64,9 +64,11 @@ class HostsScreen extends StatelessWidget {
                   return HostCard(
                     host: host,
                     onEdit: () => _showHostDialog(context, host: host),
-                    onDelete: () => controller.deleteHost(hostId: host.hostId),
+                    onDelete: () => controller.deleteHost(hostId: host.hostId, deleteServices: true),
                     onAddService: () => _showServiceDialog(context, host),
                     onGenerateConfig: () => controller.generateConfig(host.hostId),
+                    onStartExecution: () => controller.startExecution(host),
+                    onStopExecution: () => controller.stopExecution(host),
                   );
                 },
               ),
@@ -106,9 +108,11 @@ class HostsScreen extends StatelessWidget {
                   hosts: controller.hosts,
                   onEdit: (host) => _showHostDialog(context, host: host),
                   onDelete: (host) =>
-                      controller.deleteHost(hostId: host.hostId),
+                      controller.deleteHost(hostId: host.hostId, deleteServices: true),
                   onAddService: (host) => _showServiceDialog(context, host),
                   onGenerateConfig: (host) => controller.generateConfig(host.hostId),
+                  onStartExecution: (host) => controller.startExecution(host),
+                  onStopExecution: (host) => controller.stopExecution(host),
                 ),
               ),
             );
@@ -147,9 +151,11 @@ class HostsScreen extends StatelessWidget {
                   hosts: controller.hosts,
                   onEdit: (host) => _showHostDialog(context, host: host),
                   onDelete: (host) =>
-                      controller.deleteHost(hostId: host.hostId),
+                      controller.deleteHost(hostId: host.hostId, deleteServices: true),
                   onAddService: (host) => _showServiceDialog(context, host),
                   onGenerateConfig: (host) => controller.generateConfig(host.hostId),
+                  onStartExecution: (host) => controller.startExecution(host),
+                  onStopExecution: (host) => controller.stopExecution(host),
                 ),
               ),
             );

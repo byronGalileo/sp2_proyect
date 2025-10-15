@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../config/app_config.dart';
 import '../../models/user.dart';
+import '../helpers/api_response_handler.dart';
 import 'storage_service.dart';
 
 class UserListResponse {
@@ -49,53 +50,44 @@ class UserService {
     int limit = 10,
     bool? isActive,
   }) async {
-    try {
-      final headers = await _getHeaders();
+    final headers = await _getHeaders();
 
-      // Build query parameters
-      final queryParams = <String, String>{
-        'skip': skip.toString(),
-        'limit': limit.toString(),
-      };
+    // Build query parameters
+    final queryParams = <String, String>{
+      'skip': skip.toString(),
+      'limit': limit.toString(),
+    };
 
-      if (isActive != null) {
-        queryParams['is_active'] = isActive.toString();
-      }
-
-      final uri = Uri.parse('${AppConfig.baseUrl}/users/').replace(
-        queryParameters: queryParams,
-      );
-
-      final response = await http.get(uri, headers: headers);
-
-      if (response.statusCode == 200) {
-        final decodedBody = json.decode(response.body);
-        return UserListResponse.fromJson(decodedBody);
-      } else {
-        throw Exception('Failed to load users: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error fetching users: $e');
+    if (isActive != null) {
+      queryParams['is_active'] = isActive.toString();
     }
+
+    final uri = Uri.parse('${AppConfig.baseUrl}/users/').replace(
+      queryParameters: queryParams,
+    );
+
+    final response = await http.get(uri, headers: headers);
+
+    return ApiResponseHandler.handleResponse<UserListResponse>(
+      response,
+      parser: (json) => UserListResponse.fromJson(json),
+      operation: 'fetch users',
+    );
   }
 
   /// Get user by ID
   Future<User> getUserById(int userId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId'),
-        headers: headers,
-      );
+    final headers = await _getHeaders();
+    final response = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId'),
+      headers: headers,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to load user: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error fetching user: $e');
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'fetch user',
+    );
   }
 
   /// Create new user
@@ -108,33 +100,28 @@ class UserService {
     String? phone,
     String? avatarUrl,
   }) async {
-    try {
-      final headers = await _getHeaders();
-      final body = json.encode({
-        'username': username,
-        'email': email,
-        'password': password,
-        if (firstName != null) 'first_name': firstName,
-        if (lastName != null) 'last_name': lastName,
-        if (phone != null) 'phone': phone,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
-      });
+    final headers = await _getHeaders();
+    final body = json.encode({
+      'username': username,
+      'email': email,
+      'password': password,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+      if (phone != null) 'phone': phone,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+    });
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/create'),
-        headers: headers,
-        body: body,
-      );
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/create'),
+      headers: headers,
+      body: body,
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['detail'] ?? 'Failed to create user');
-      }
-    } catch (e) {
-      rethrow;
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'create user',
+    );
   }
 
   /// Update user data
@@ -147,70 +134,57 @@ class UserService {
     String? phone,
     String? avatarUrl,
   }) async {
-    try {
-      final headers = await _getHeaders();
-      final body = json.encode({
-        if (username != null) 'username': username,
-        if (email != null) 'email': email,
-        if (firstName != null) 'first_name': firstName,
-        if (lastName != null) 'last_name': lastName,
-        if (phone != null) 'phone': phone,
-        if (avatarUrl != null) 'avatar_url': avatarUrl,
-      });
+    final headers = await _getHeaders();
+    final body = json.encode({
+      if (username != null) 'username': username,
+      if (email != null) 'email': email,
+      if (firstName != null) 'first_name': firstName,
+      if (lastName != null) 'last_name': lastName,
+      if (phone != null) 'phone': phone,
+      if (avatarUrl != null) 'avatar_url': avatarUrl,
+    });
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId/update'),
-        headers: headers,
-        body: body,
-      );
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId/update'),
+      headers: headers,
+      body: body,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        final errorBody = json.decode(response.body);
-        throw Exception(errorBody['detail'] ?? 'Failed to update user');
-      }
-    } catch (e) {
-      rethrow;
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'update user',
+    );
   }
 
   /// Deactivate user (soft delete)
   Future<User> deactivateUser(int userId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId/deactivate'),
-        headers: headers,
-      );
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId/deactivate'),
+      headers: headers,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to deactivate user: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error deactivating user: $e');
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'deactivate user',
+    );
   }
 
   /// Activate user
   Future<User> activateUser(int userId) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId/activate'),
-        headers: headers,
-      );
+    final headers = await _getHeaders();
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId/activate'),
+      headers: headers,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to activate user: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error activating user: $e');
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'activate user',
+    );
   }
 
   /// Assign roles to user
@@ -218,26 +192,22 @@ class UserService {
     required int userId,
     required List<int> roleIds,
   }) async {
-    try {
-      final headers = await _getHeaders();
-      final body = json.encode({
-        'role_ids': roleIds,
-      });
+    final headers = await _getHeaders();
+    final body = json.encode({
+      'role_ids': roleIds,
+    });
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId/assign-roles'),
-        headers: headers,
-        body: body,
-      );
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId/assign-roles'),
+      headers: headers,
+      body: body,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to assign roles: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error assigning roles: $e');
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'assign roles',
+    );
   }
 
   /// Reset user password
@@ -245,25 +215,21 @@ class UserService {
     required int userId,
     required String newPassword,
   }) async {
-    try {
-      final headers = await _getHeaders();
-      final body = json.encode({
-        'new_password': newPassword,
-      });
+    final headers = await _getHeaders();
+    final body = json.encode({
+      'new_password': newPassword,
+    });
 
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/users/$userId/reset-password'),
-        headers: headers,
-        body: body,
-      );
+    final response = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/users/$userId/reset-password'),
+      headers: headers,
+      body: body,
+    );
 
-      if (response.statusCode == 200) {
-        return User.fromJson(json.decode(response.body));
-      } else {
-        throw Exception('Failed to reset password: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error resetting password: $e');
-    }
+    return ApiResponseHandler.handleResponse<User>(
+      response,
+      parser: (json) => User.fromJson(json),
+      operation: 'reset password',
+    );
   }
 }

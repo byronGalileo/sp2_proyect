@@ -73,6 +73,9 @@ HostMetadata _$HostMetadataFromJson(Map<String, dynamic> json) => HostMetadata(
   os: json['os'] as String?,
   purpose: json['purpose'] as String?,
   tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
+  configPath: json['config_path'] as String?,
+  configGeneratedAt: json['config_generated_at'] as String?,
+  configServicesCount: (json['config_services_count'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$HostMetadataToJson(HostMetadata instance) =>
@@ -80,6 +83,9 @@ Map<String, dynamic> _$HostMetadataToJson(HostMetadata instance) =>
       'os': instance.os,
       'purpose': instance.purpose,
       'tags': instance.tags,
+      'config_path': instance.configPath,
+      'config_generated_at': instance.configGeneratedAt,
+      'config_services_count': instance.configServicesCount,
     };
 
 HostListResponse _$HostListResponseFromJson(Map<String, dynamic> json) =>

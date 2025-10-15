@@ -3,6 +3,7 @@ import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:get/get.dart';
 import '../../../../config/app_config.dart';
 import '../../../../models/host.dart';
+import '../../controllers/hosts_controller.dart';
 
 class HostCard extends StatelessWidget {
   final Host host;
@@ -11,6 +12,8 @@ class HostCard extends StatelessWidget {
   final VoidCallback? onViewServices;
   final VoidCallback? onAddService;
   final VoidCallback? onGenerateConfig;
+  final VoidCallback? onStartExecution;
+  final VoidCallback? onStopExecution;
 
   const HostCard({
     super.key,
@@ -20,10 +23,14 @@ class HostCard extends StatelessWidget {
     this.onViewServices,
     this.onAddService,
     this.onGenerateConfig,
+    this.onStartExecution,
+    this.onStopExecution,
   });
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HostsController>();
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -149,6 +156,42 @@ class HostCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Obx(() {
+              final isRunning = controller.monitoringStatus[host.hostId] ?? false;
+
+              if (isRunning) {
+                // Show Stop button
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onStopExecution,
+                    icon: const Icon(EvaIcons.stopCircleOutline, size: 16),
+                    label: const Text('Stop Monitoring'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                );
+              } else {
+                // Show Start button
+                return SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: onStartExecution,
+                    icon: const Icon(EvaIcons.playCircleOutline, size: 16),
+                    label: const Text('Start Monitoring'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                );
+              }
+            }),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

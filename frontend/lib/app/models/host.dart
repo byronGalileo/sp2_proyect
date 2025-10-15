@@ -108,10 +108,22 @@ class HostMetadata {
   final String? purpose;
   final List<String> tags;
 
+  @JsonKey(name: 'config_path')
+  final String? configPath;
+
+  @JsonKey(name: 'config_generated_at')
+  final String? configGeneratedAt;
+
+  @JsonKey(name: 'config_services_count')
+  final int? configServicesCount;
+
   HostMetadata({
     this.os,
     this.purpose,
     required this.tags,
+    this.configPath,
+    this.configGeneratedAt,
+    this.configServicesCount,
   });
 
   factory HostMetadata.fromJson(Map<String, dynamic> json) =>

@@ -30,7 +30,7 @@ Map<String, dynamic> _$ServiceToJson(Service instance) => <String, dynamic>{
 
 ServicesResponse _$ServicesResponseFromJson(Map<String, dynamic> json) =>
     ServicesResponse(
-      totalServices: (100 as num).toInt(),
+      totalServices: (json['total_services'] as num).toInt(),
       services: (json['services'] as List<dynamic>)
           .map((e) => Service.fromJson(e as Map<String, dynamic>))
           .toList(),

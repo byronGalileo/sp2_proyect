@@ -3,6 +3,7 @@ import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:get/get.dart';
 import '../../../../config/app_config.dart';
 import '../../../../models/host.dart';
+import '../../controllers/hosts_controller.dart';
 
 class HostTable extends StatelessWidget {
   final List<Host> hosts;
@@ -11,6 +12,8 @@ class HostTable extends StatelessWidget {
   final Function(Host) onAddService;
   final Function(Host)? onViewServices;
   final Function(Host)? onGenerateConfig;
+  final Function(Host)? onStartExecution;
+  final Function(Host)? onStopExecution;
 
   const HostTable({
     super.key,
@@ -20,10 +23,14 @@ class HostTable extends StatelessWidget {
     required this.onAddService,
     this.onViewServices,
     this.onGenerateConfig,
+    this.onStartExecution,
+    this.onStopExecution,
   });
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<HostsController>();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -52,14 +59,49 @@ class HostTable extends StatelessWidget {
             return DataRow(
               cells: [
                 DataCell(
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(host.status),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(host.status),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Obx(() {
+                        final isRunning = controller.monitoringStatus[host.hostId] ?? false;
+
+                        if (isRunning) {
+                          // Show Stop button
+                          return IconButton(
+                            icon: const Icon(EvaIcons.stopCircleOutline, size: 16),
+                            onPressed: onStopExecution != null
+                                ? () => onStopExecution!(host)
+                                : null,
+                            tooltip: 'Stop Monitoring',
+                            color: Colors.red,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          );
+                        } else {
+                          // Show Start button
+                          return IconButton(
+                            icon: const Icon(EvaIcons.playCircleOutline, size: 16),
+                            onPressed: onStartExecution != null
+                                ? () => onStartExecution!(host)
+                                : null,
+                            tooltip: 'Start Monitoring',
+                            color: Colors.teal,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          );
+                        }
+                      }),
+                    ]
+                  )
                 ),
                 DataCell(
                   Text(

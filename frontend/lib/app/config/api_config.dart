@@ -36,4 +36,9 @@ class ApiEndpoints {
 
   // Config generation endpoints
   static const String configGenerate = '/config/generate';
+
+  // Monitoring execution endpoints
+  static const String monitoringStart = '/monitoring/start';
+  static const String monitoringStop = '/monitoring/stop';
+  static const String monitoringStatus = '/monitoring/status';
 }

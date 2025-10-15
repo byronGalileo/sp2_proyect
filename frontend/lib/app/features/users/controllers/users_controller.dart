@@ -229,6 +229,31 @@ class UsersController extends GetxController {
   /// Deactivate user
   Future<void> deactivateUser(int userId) async {
     try {
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: const Text('Deactivate User'),
+          content: Text(
+                'Are you sure you want to deactivate this user',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.back(result: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Deactivate'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
       isLoading.value = true;
 
       final updatedUser = await _userService.deactivateUser(userId);
@@ -243,12 +268,16 @@ class UsersController extends GetxController {
         'Success',
         'User deactivated successfully',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
       );
     } catch (e) {
       Get.snackbar(
         'Error',
         'Failed to deactivate user: $e',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
       );
     } finally {
       isLoading.value = false;
@@ -278,6 +307,8 @@ class UsersController extends GetxController {
         'Success',
         'Roles assigned successfully',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
       );
 
       return true;
@@ -286,6 +317,8 @@ class UsersController extends GetxController {
         'Error',
         'Failed to assign roles: $e',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.error,
+        colorText: Get.theme.colorScheme.onError,
       );
       return false;
     } finally {
@@ -310,6 +343,8 @@ class UsersController extends GetxController {
         'Success',
         'Password reset successfully',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
       );
 
       return true;

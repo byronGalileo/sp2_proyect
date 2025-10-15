@@ -18,6 +18,9 @@ class HostsController extends GetxController {
   final RxBool isLoadingMore = false.obs;
   final RxString errorMessage = ''.obs;
 
+  // Monitoring status tracking: hostId -> isRunning
+  final RxMap<String, bool> monitoringStatus = <String, bool>{}.obs;
+
   // Pagination
   final RxInt currentPage = 0.obs;
   final RxInt totalHosts = 0.obs;
@@ -33,6 +36,32 @@ class HostsController extends GetxController {
     super.onInit();
     loadHosts();
     loadMetadata();
+  }
+
+  /// Check monitoring status for a specific host
+  Future<void> checkMonitoringStatus(Host host) async {
+    final configPath = host.metadata.configPath;
+    if (configPath == null || configPath.isEmpty) {
+      monitoringStatus[host.hostId] = false;
+      return;
+    }
+
+    try {
+      final configName = configPath.split('/').last;
+      final response = await _hostService.getExecutionStatus(configName);
+      final isRunning = response['data']?['is_running'] ?? false;
+      monitoringStatus[host.hostId] = isRunning;
+    } catch (e) {
+      // If status check fails, assume not running
+      monitoringStatus[host.hostId] = false;
+    }
+  }
+
+  /// Check monitoring status for all loaded hosts
+  Future<void> checkAllMonitoringStatus() async {
+    for (final host in hosts) {
+      await checkMonitoringStatus(host);
+    }
   }
 
   /// Load hosts with current filters and pagination
@@ -61,6 +90,9 @@ class HostsController extends GetxController {
       }
 
       totalHosts.value = response.data.count;
+
+      // Check monitoring status for all hosts
+      await checkAllMonitoringStatus();
     } on ApiException catch (e) {
       errorMessage.value = e.message;
       Get.snackbar(
@@ -285,7 +317,7 @@ class HostsController extends GetxController {
           content: Text(
             deleteServices
                 ? 'Are you sure you want to delete this host and all its services? This action cannot be undone.'
-                : 'Are you sure you want to delete this host? Its related services will deleted too.',
+                : 'Are you sure you want to delete this host? Its related services will be remain.',
           ),
           actions: [
             TextButton(
@@ -407,6 +439,148 @@ class HostsController extends GetxController {
       Get.snackbar(
         'Error',
         'Failed to generate config: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Start monitoring execution for a host
+  /// Extracts config filename from host metadata config_path
+  Future<void> startExecution(Host host) async {
+    try {
+      // Extract config filename from config_path
+      final configPath = host.metadata.configPath;
+
+      if (configPath == null || configPath.isEmpty) {
+        Get.snackbar(
+          'Error',
+          'No config file found for this host. Please generate a config first.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.orange[100],
+          colorText: Colors.orange[900],
+        );
+        return;
+      }
+
+      // Extract filename from path (e.g., "monitor/config/config.beagle_01.json" -> "config.beagle_01.json")
+      final configName = configPath.split('/').last;
+
+      isLoading.value = true;
+
+      final response = await _hostService.startExecution(configName);
+
+      // Show success message with details
+      final message = response['message'] ?? 'Monitor started successfully';
+
+      Get.snackbar(
+        'Success',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
+        duration: const Duration(seconds: 5),
+      );
+
+      // Update monitoring status
+      await checkMonitoringStatus(host);
+    } on ApiException catch (e) {
+      Get.snackbar(
+        'Error',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to start monitoring: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Stop monitoring execution for a host
+  /// Shows confirmation dialog before stopping
+  Future<void> stopExecution(Host host) async {
+    // Extract config filename from config_path
+    final configPath = host.metadata.configPath;
+
+    if (configPath == null || configPath.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'No config file found for this host.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange[100],
+        colorText: Colors.orange[900],
+      );
+      return;
+    }
+
+    // Extract filename from path
+    final configName = configPath.split('/').last;
+
+    // Show confirmation dialog
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Stop Monitoring'),
+        content: Text(
+          'Are you sure you want to stop monitoring for ${host.hostname}?\n\nThis will stop the monitoring process for config: $configName',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Stop'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      isLoading.value = true;
+
+      final response = await _hostService.stopExecution(configName);
+
+      // Show success message with details
+      final message = response['message'] ?? 'Monitor stopped successfully';
+
+      Get.snackbar(
+        'Success',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
+        duration: const Duration(seconds: 5),
+      );
+
+      // Update monitoring status
+      await checkMonitoringStatus(host);
+    } on ApiException catch (e) {
+      Get.snackbar(
+        'Error',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to stop monitoring: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {
