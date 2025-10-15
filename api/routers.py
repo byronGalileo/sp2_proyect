@@ -791,6 +791,7 @@ async def download_config(
 
 import subprocess
 import os
+import sys
 import psutil
 import signal
 import traceback
@@ -843,14 +844,19 @@ def get_config_path(config_name: str) -> str:
     return config_path
 
 def get_monitor_script_path() -> str:
-    """Get the path to the run_monitor.sh script"""
+    """Get the path to the run_monitor.py script"""
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    script_path = os.path.join(project_root, "monitor", "run_monitor.sh")
+    script_path = os.path.join(project_root, "monitor", "run_monitor.py")
 
     if not os.path.exists(script_path):
         raise HTTPException(status_code=500, detail=f"Monitor script not found: {script_path}")
 
     return script_path
+
+def get_python_executable() -> str:
+    """Get the Python executable path"""
+    # Use the same Python executable that is running this API
+    return sys.executable or "/usr/bin/python3"
 
 def is_process_running(pid: int) -> bool:
     """Check if a process is still running"""
@@ -1004,33 +1010,35 @@ async def control_monitor(request: MonitorControlRequest):
                 if current_process and is_process_running(current_process.process.pid):
                     raise HTTPException(status_code=409, detail=f"Monitor '{config_name}' is already running")
 
-                # Get config path
+                # Get config path and Python executable
                 config_path = get_config_path(config_name)
                 script_path = get_monitor_script_path()
+                python_executable = get_python_executable()
 
-                # Start the monitor process
+                # Start the monitor process directly with Python
 
                 try:
                     logger.info(f"[START] Attempting to launch monitor '{config_name}'")
+                    logger.info(f"[START] Python executable: {python_executable}")
                     logger.info(f"[START] Script path: {script_path}")
                     logger.info(f"[START] Config path: {config_path}")
                     logger.info(f"[START] Current working directory: {os.getcwd()}")
 
                     # Step 1: verify existence and permissions
+                    logger.info(f"[CHECK] Python exists? {os.path.exists(python_executable)}")
                     logger.info(f"[CHECK] Script exists? {os.path.exists(script_path)}")
                     logger.info(f"[CHECK] Config exists? {os.path.exists(config_path)}")
-                    logger.info(f"[CHECK] Script permissions: {oct(os.stat(script_path).st_mode)[-3:]}")
 
-                    # Step 2: try spawning process
-                    logger.info("[ACTION] Spawning subprocess.Popen() ...")
+                    # Step 2: try spawning process directly with Python
+                    logger.info("[ACTION] Spawning subprocess.Popen() with Python directly...")
                     process = subprocess.Popen(
-                        [script_path, "--config", config_path],
+                        [python_executable, script_path, "--config", config_path],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         preexec_fn=os.setsid,  # Create new process group
                         text=True,             # Return decoded strings (no need for .decode())
                     )
-                    logger.info(f"[RESULT] Subprocess created with PID {process.pid}")
+                    logger.info(f"[RESULT] Python process created with PID {process.pid}")
 
                     # Step 3: give it time to start
                     time.sleep(1)
