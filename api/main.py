@@ -20,7 +20,7 @@ import logging
 # Setup Python path for imports
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 venv_path = os.path.join(project_root, "venv")
-venv_site_packages = os.path.join(venv_path, "lib", f"python{sys.version_info.major}.{sys.version_info.minor}", "site-packages")
+venv_site_packages = os.path.join(venv_path, "lib", "python{}.{}".format(sys.version_info.major, sys.version_info.minor), "site-packages")
 
 if os.path.exists(venv_site_packages):
     sys.path.insert(0, venv_site_packages)
