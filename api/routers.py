@@ -967,38 +967,54 @@ async def control_monitor(request: MonitorControlRequest):
                 script_path = get_monitor_script_path()
 
                 # Start the monitor process
-                logger.info(f"Launching monitor: {script_path} --config {config_path}")
-                logger.info(f"Exists script? {os.path.exists(script_path)}")
-                logger.info(f"Exists config? {os.path.exists(config_path)}")
-                logger.info(f"CWD: {os.getcwd()}")
 
                 try:
+                    logger.info(f"[START] Attempting to launch monitor '{config_name}'")
+                    logger.info(f"[START] Script path: {script_path}")
+                    logger.info(f"[START] Config path: {config_path}")
+                    logger.info(f"[START] Current working directory: {os.getcwd()}")
+
+                    # Step 1: verify existence and permissions
+                    logger.info(f"[CHECK] Script exists? {os.path.exists(script_path)}")
+                    logger.info(f"[CHECK] Config exists? {os.path.exists(config_path)}")
+                    logger.info(f"[CHECK] Script permissions: {oct(os.stat(script_path).st_mode)[-3:]}")
+
+                    # Step 2: try spawning process
+                    logger.info("[ACTION] Spawning subprocess.Popen() ...")
                     process = subprocess.Popen(
                         [script_path, "--config", config_path],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        preexec_fn=os.setsid  # Create new process group
+                        preexec_fn=os.setsid,  # Create new process group
+                        text=True,             # Return decoded strings (no need for .decode())
                     )
+                    logger.info(f"[RESULT] Subprocess created with PID {process.pid}")
 
-                    # Wait a moment to check if it started successfully
+                    # Step 3: give it time to start
                     time.sleep(1)
-                    if process.poll() is not None:
-                        # Process died immediately
-                        stdout, stderr = process.communicate()
-                        error_msg = stderr.decode() if stderr else stdout.decode()
-                        raise HTTPException(status_code=500, detail=f"Monitor failed to start: {error_msg}")
+                    poll_status = process.poll()
+                    logger.info(f"[CHECK] Process poll() result after 1s: {poll_status}")
 
-                    # Create process info
+                    # Step 4: check if process died early
+                    if poll_status is not None:
+                        stdout, stderr = process.communicate(timeout=2)
+                        logger.warning(f"[ERROR] Process exited early with code {poll_status}")
+                        logger.warning(f"[STDOUT]\n{stdout.strip() if stdout else '(empty)'}")
+                        logger.warning(f"[STDERR]\n{stderr.strip() if stderr else '(empty)'}")
+                        raise HTTPException(status_code=500, detail=f"Monitor failed to start: {stderr or stdout}")
+
+                    # Step 5: store process info
+                    logger.info(f"[SUCCESS] Monitor '{config_name}' started with PID={process.pid}")
                     process_info = MonitorProcessInfo(config_name, config_path, process)
                     if action == 'restart' and current_process:
                         process_info.restart_count = current_process.restart_count + 1
+                        logger.info(f"[INFO] Restart count incremented to {process_info.restart_count}")
 
                     monitor_processes[config_name] = process_info
-
-                    logger.info(f"Started monitor '{config_name}' with PID {process.pid}")
+                    logger.info(f"[STORE] Monitor '{config_name}' registered successfully")
 
                 except Exception as e:
-                    logger.error(f"Failed to start monitor '{config_name}': {traceback.format_exc()}")
+                    logger.error(f"[FAIL] Exception while starting monitor '{config_name}': {traceback.format_exc()}")
                     raise HTTPException(status_code=500, detail=f"Failed to start monitor: {str(e)}")
         # Return appropriate response
         if action == 'start':
