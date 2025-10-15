@@ -213,7 +213,7 @@ class HostOperations:
             # Delete associated services if requested
             if delete_services:
                 services_collection = self.connection.database['services']
-                if services_collection:
+                if services_collection is not None:
                     services_result = services_collection.delete_many({"host_id": host_id})
                     logger.info(f"Deleted {services_result.deleted_count} services for host {host_id}")
 
