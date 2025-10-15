@@ -74,7 +74,7 @@ class ManagedServiceService {
 
   /// Create a new service
   Future<void> createService({
-    required String serviceId,
+    String? serviceId,
     required String hostId,
     required String serviceName,
     required String serviceType,
@@ -89,7 +89,7 @@ class ManagedServiceService {
     List<String>? dependencies,
   }) async {
     final body = json.encode({
-      'service_id': serviceId,
+      if (serviceId != null) 'service_id': serviceId,
       'host_id': hostId,
       'service_name': serviceName,
       'service_type': serviceType,

@@ -33,4 +33,7 @@ class ApiEndpoints {
   static const String managedServices = '/services';
   static const String servicesDashboard = '/services/dashboard/summary';
   static const String servicesAttention = '/services/attention/needed';
+
+  // Config generation endpoints
+  static const String configGenerate = '/config/generate';
 }

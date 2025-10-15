@@ -66,6 +66,7 @@ class HostsScreen extends StatelessWidget {
                     onEdit: () => _showHostDialog(context, host: host),
                     onDelete: () => controller.deleteHost(hostId: host.hostId),
                     onAddService: () => _showServiceDialog(context, host),
+                    onGenerateConfig: () => controller.generateConfig(host.hostId),
                   );
                 },
               ),
@@ -107,6 +108,7 @@ class HostsScreen extends StatelessWidget {
                   onDelete: (host) =>
                       controller.deleteHost(hostId: host.hostId),
                   onAddService: (host) => _showServiceDialog(context, host),
+                  onGenerateConfig: (host) => controller.generateConfig(host.hostId),
                 ),
               ),
             );
@@ -147,6 +149,7 @@ class HostsScreen extends StatelessWidget {
                   onDelete: (host) =>
                       controller.deleteHost(hostId: host.hostId),
                   onAddService: (host) => _showServiceDialog(context, host),
+                  onGenerateConfig: (host) => controller.generateConfig(host.hostId),
                 ),
               ),
             );

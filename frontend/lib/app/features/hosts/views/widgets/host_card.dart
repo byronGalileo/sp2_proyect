@@ -10,6 +10,7 @@ class HostCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback? onViewServices;
   final VoidCallback? onAddService;
+  final VoidCallback? onGenerateConfig;
 
   const HostCard({
     super.key,
@@ -18,6 +19,7 @@ class HostCard extends StatelessWidget {
     required this.onDelete,
     this.onViewServices,
     this.onAddService,
+    this.onGenerateConfig,
   });
 
   @override
@@ -115,18 +117,37 @@ class HostCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: onAddService ??
-                  () {
-                    // Navigate to services screen with dialog open
-                    Get.toNamed('/services/managed-services',
-                        arguments: {'hostId': host.hostId, 'openDialog': true});
-                  },
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Add Service'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 36),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onAddService ??
+                        () {
+                          // Navigate to services screen with dialog open
+                          Get.toNamed('/services/managed-services',
+                              arguments: {'hostId': host.hostId, 'openDialog': true});
+                        },
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text('Add Service'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onGenerateConfig,
+                    icon: const Icon(EvaIcons.fileTextOutline, size: 16),
+                    label: const Text('Gen Config'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(0, 36),
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Row(

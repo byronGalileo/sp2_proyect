@@ -142,7 +142,7 @@ class HostsController extends GetxController {
 
   /// Create new host
   Future<bool> createHost({
-    required String hostId,
+    String? hostId,
     required String hostname,
     required String ipAddress,
     required String environment,
@@ -285,7 +285,7 @@ class HostsController extends GetxController {
           content: Text(
             deleteServices
                 ? 'Are you sure you want to delete this host and all its services? This action cannot be undone.'
-                : 'Are you sure you want to delete this host? Its services will remain.',
+                : 'Are you sure you want to delete this host? Its related services will deleted too.',
           ),
           actions: [
             TextButton(
@@ -373,6 +373,45 @@ class HostsController extends GetxController {
   @override
   Future<void> refresh() async {
     await loadHosts(refresh: true);
+  }
+
+  /// Generate configuration file for a host
+  Future<void> generateConfig(String hostId) async {
+    try {
+      isLoading.value = true;
+
+      final response = await _hostService.generateConfig(hostId);
+
+      // Show success message with details
+      final message = response['message'] ?? 'Config generated successfully';
+      final relativePath = response['data']?['relative_path'];
+      final servicesCount = response['data']?['services_count'];
+
+      Get.snackbar(
+        'Success',
+        '$message\nServices: $servicesCount\nPath: $relativePath',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green[100],
+        colorText: Colors.green[900],
+        duration: const Duration(seconds: 5),
+      );
+    } on ApiException catch (e) {
+      Get.snackbar(
+        'Error',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to generate config: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   // Computed properties

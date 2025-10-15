@@ -10,6 +10,7 @@ class HostTable extends StatelessWidget {
   final Function(Host) onDelete;
   final Function(Host) onAddService;
   final Function(Host)? onViewServices;
+  final Function(Host)? onGenerateConfig;
 
   const HostTable({
     super.key,
@@ -18,6 +19,7 @@ class HostTable extends StatelessWidget {
     required this.onDelete,
     required this.onAddService,
     this.onViewServices,
+    this.onGenerateConfig,
   });
 
   @override
@@ -43,6 +45,7 @@ class HostTable extends StatelessWidget {
             DataColumn(label: Text('SSH User')),
             DataColumn(label: Text('Tags')),
             DataColumn(label: Text('Last Seen')),
+            DataColumn(label: Text('Configs')),
             DataColumn(label: Text('Actions')),
           ],
           rows: hosts.map((host) {
@@ -133,6 +136,32 @@ class HostTable extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        icon: const Icon(EvaIcons.plusCircleOutline, size: 16),
+                        onPressed: () => onAddService(host),
+                        tooltip: 'Add Service',
+                        color: Colors.green,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(EvaIcons.fileTextOutline, size: 16),
+                        onPressed: onGenerateConfig != null
+                            ? () => onGenerateConfig!(host)
+                            : null,
+                        tooltip: 'Generate Config',
+                        color: Colors.purple,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                DataCell(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
                         icon: const Icon(EvaIcons.activity, size: 16),
                         onPressed: onViewServices != null
                             ? () => onViewServices!(host)
@@ -140,15 +169,6 @@ class HostTable extends StatelessWidget {
                                 arguments: {'hostId': host.hostId}),
                         tooltip: 'View Services',
                         color: Colors.blue,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(EvaIcons.plusCircleOutline, size: 16),
-                        onPressed: () => onAddService(host),
-                        tooltip: 'Add Service',
-                        color: Colors.green,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),

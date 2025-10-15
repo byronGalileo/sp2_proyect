@@ -204,7 +204,6 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
       );
     } else {
       success = await controller.createService(
-        serviceId: _serviceIdController.text.trim(),
         hostId: _selectedHostId!,
         serviceName: _serviceNameController.text.trim(),
         serviceType: _selectedServiceType!,
@@ -269,18 +268,13 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                       Expanded(
                         child: TextFormField(
                           controller: _serviceIdController,
-                          enabled: !isEditing,
-                          decoration: const InputDecoration(
-                            labelText: 'Service ID *',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.fingerprint),
+                          enabled: false,
+                          decoration: InputDecoration(
+                            labelText: isEditing ? 'Service ID' : 'Service ID (Auto-generated)',
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.fingerprint),
+                            helperText: isEditing ? null : 'Generated from service name',
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Service ID is required';
-                            }
-                            return null;
-                          },
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -406,6 +400,7 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                     ),
                     items: const [
                       DropdownMenuItem(value: 'ssh', child: Text('SSH')),
+                      DropdownMenuItem(value: 'local', child: Text('LOCAL')),
                       DropdownMenuItem(value: 'http', child: Text('HTTP')),
                       DropdownMenuItem(value: 'tcp', child: Text('TCP')),
                     ],

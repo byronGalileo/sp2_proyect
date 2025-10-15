@@ -177,7 +177,7 @@ class ManagedServicesController extends GetxController {
 
   /// Create new service
   Future<bool> createService({
-    required String serviceId,
+    String? serviceId,
     required String hostId,
     required String serviceName,
     required String serviceType,

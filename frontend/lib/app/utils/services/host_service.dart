@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../config/api_config.dart';
 import '../../models/host.dart';
 import '../helpers/api_response_handler.dart';
+import '../exceptions/api_exception.dart';
 
 class HostService {
   /// Get all hosts with optional filters
@@ -60,7 +61,7 @@ class HostService {
 
   /// Create a new host
   Future<void> createHost({
-    required String hostId,
+    String? hostId,
     required String hostname,
     required String ipAddress,
     required String environment,
@@ -76,7 +77,7 @@ class HostService {
     String status = 'active',
   }) async {
     final body = json.encode({
-      'host_id': hostId,
+      if (hostId != null) 'host_id': hostId,
       'hostname': hostname,
       'ip_address': ipAddress,
       'environment': environment,
@@ -219,5 +220,24 @@ class HostService {
       parser: (json) => MetadataListResponse.fromJson(json as Map<String, dynamic>),
       operation: 'fetch',
     );
+  }
+
+  /// Generate configuration file for a host
+  Future<Map<String, dynamic>> generateConfig(String hostId) async {
+    final response = await http.get(
+      Uri.parse(
+        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.configGenerate}/$hostId',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as Map<String, dynamic>;
+    } else {
+      throw ApiException(
+        message: 'Failed to generate config: ${response.body}',
+        statusCode: response.statusCode,
+      );
+    }
   }
 }

@@ -104,7 +104,6 @@ class _HostFormDialogState extends State<HostFormDialog> {
       );
     } else {
       success = await controller.createHost(
-        hostId: _hostIdController.text.trim(),
         hostname: _hostnameController.text.trim(),
         ipAddress: _ipAddressController.text.trim(),
         environment: _selectedEnvironment!,
@@ -174,29 +173,37 @@ class _HostFormDialogState extends State<HostFormDialog> {
                       Expanded(
                         child: TextFormField(
                           controller: _hostIdController,
-                          enabled: !isEditing,
+                          enabled: false,
                           decoration: InputDecoration(
-                            labelText: 'Host ID *',
+                            labelText: isEditing ? 'Host ID' : 'Host ID (Auto-generated)',
                             prefixIcon: const Icon(Icons.fingerprint),
+                            helperText: isEditing ? null : 'Generated from hostname',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(AppConfig.borderRadius),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Host ID is required';
-                            }
-                            return null;
-                          },
                           textInputAction: TextInputAction.next,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: CustomTextField(
+                        child: TextFormField(
                           controller: _hostnameController,
-                          label: 'Hostname *',
-                          prefixIcon: Icons.computer,
+                          decoration: InputDecoration(
+                            labelText: 'Hostname *',
+                            prefixIcon: const Icon(Icons.computer),
+                            helperText: 'Example: web-server-01, db-main',
+                            filled: true,
+                            fillColor: Colors.white,
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
+                            ),
+                          ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Hostname is required';
