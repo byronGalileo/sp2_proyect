@@ -119,25 +119,26 @@ class ServiceChecker:
         action = "restart" if target.recover_action == "restart" else "start"
         credentials = target.credentials
 
-        # Try with user credentials first if available
-        if credentials.get("user") and credentials.get("password"):
-            cmd = (
-                f"echo {shlex.quote(credentials['password'])} | "
-                f"su -c 'systemctl {action} {shlex.quote(target.service)}' "
-                f"{shlex.quote(credentials['user'])}"
-            )
-            cp = self._shell(cmd)
-        else:
-            # Try without sudo first, then with sudo if needed
-            cmd = f"systemctl {action} {shlex.quote(target.service)}"
-            cp = self._shell(cmd)
+        # Determine if we need sudo
+        use_sudo = target.use_sudo
 
-            # If permission denied and use_sudo is enabled, retry with sudo
-            if (cp.returncode != 0 and
-                target.use_sudo and
-                "permission" in (cp.stderr.lower() + cp.stdout.lower())):
+        # Build the systemctl command
+        if use_sudo:
+            # Use sudo with credentials if available
+            if credentials.get("password"):
+                # Use sudo -S to read password from stdin
+                cmd = (
+                    f"echo {shlex.quote(credentials['password'])} | "
+                    f"sudo -S systemctl {action} {shlex.quote(target.service)}"
+                )
+            else:
+                # Use sudo without password (assumes NOPASSWD in sudoers)
                 cmd = f"sudo systemctl {action} {shlex.quote(target.service)}"
-                cp = self._shell(cmd)
+        else:
+            # No sudo - try direct systemctl
+            cmd = f"systemctl {action} {shlex.quote(target.service)}"
+
+        cp = self._shell(cmd)
 
         return ActionResult(
             success=(cp.returncode == 0),
