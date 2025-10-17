@@ -702,6 +702,9 @@ async def generate_config(
         config = {
             "log_file": host.get("log_file", f"logs/{host_id}_monitor.log"),
             "log_level": "INFO",
+            "mongodb": {
+                "enabled": False
+            },
             "targets": targets
         }
 
