@@ -193,7 +193,7 @@ async def create_host(request: CreateHostRequest):
         # Create Host object
         credentials = {}
         if request.ssh_config.credentials:
-            credentials = request.ssh_config.credentials.model_dump()
+            credentials = request.ssh_config.credentials.dict()
 
         host = Host(
             host_id=host_id,
@@ -207,8 +207,8 @@ async def create_host(request: CreateHostRequest):
             use_sudo=request.ssh_config.use_sudo,
             credentials=credentials,
             log_file=request.log_file,
-            location=request.location.model_dump() if request.location else {},
-            metadata=request.metadata.model_dump() if request.metadata else {"tags": []},
+            location=request.location.dict() if request.location else {},
+            metadata=request.metadata.dict() if request.metadata else {"tags": []},
             status=HostStatus(request.status)
         )
 
