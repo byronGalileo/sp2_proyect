@@ -55,11 +55,16 @@ def generate_id_from_name(name: str) -> str:
 
 # ==================== PYDANTIC MODELS ====================
 
+class Credentials(BaseModel):
+    password: Optional[str] = Field(None, description="Password for sudo/authentication")
+
+
 class SSHConfig(BaseModel):
     user: str = Field(..., description="SSH username")
     port: int = Field(22, description="SSH port", ge=1, le=65535)
     key_path: Optional[str] = Field(None, description="Path to SSH key file")
     use_sudo: bool = Field(False, description="Whether to use sudo for commands")
+    credentials: Optional[Credentials] = Field(None, description="Credentials for authentication")
 
 
 class LocationInfo(BaseModel):
@@ -186,6 +191,10 @@ async def create_host(request: CreateHostRequest):
             raise HTTPException(status_code=409, detail="Host with ID '{}' already exists".format(host_id))
 
         # Create Host object
+        credentials = {}
+        if request.ssh_config.credentials:
+            credentials = request.ssh_config.credentials.model_dump()
+
         host = Host(
             host_id=host_id,
             hostname=request.hostname,
@@ -196,9 +205,10 @@ async def create_host(request: CreateHostRequest):
             ssh_port=request.ssh_config.port,
             ssh_key_path=request.ssh_config.key_path,
             use_sudo=request.ssh_config.use_sudo,
+            credentials=credentials,
             log_file=request.log_file,
-            location=request.location.dict() if request.location else {},
-            metadata=request.metadata.dict() if request.metadata else {"tags": []},
+            location=request.location.model_dump() if request.location else {},
+            metadata=request.metadata.model_dump() if request.metadata else {"tags": []},
             status=HostStatus(request.status)
         )
 
@@ -694,6 +704,13 @@ async def generate_config(
                 target["ssh"] = {
                     "user": host["ssh_config"]["user"],
                     "port": host["ssh_config"]["port"]
+                }
+
+            # Add credentials if available
+            credentials = host["ssh_config"].get("credentials", {})
+            if credentials and credentials.get("password"):
+                target["credentials"] = {
+                    "password": credentials["password"]
                 }
 
             targets.append(target)

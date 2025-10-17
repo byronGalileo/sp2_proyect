@@ -63,6 +63,7 @@ class Host:
         ssh_port: int = 22,
         ssh_key_path: Optional[str] = None,
         use_sudo: bool = False,
+        credentials: Optional[Dict[str, Any]] = None,
         log_file: Optional[str] = None,
         location: Optional[Dict[str, Any]] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -80,6 +81,7 @@ class Host:
         self.ssh_port = ssh_port
         self.ssh_key_path = ssh_key_path
         self.use_sudo = use_sudo
+        self.credentials = credentials or {}
         self.log_file = log_file or f"logs/{host_id}_monitor.log"
         self.location = location or {}
         self.metadata = metadata or {"tags": []}
@@ -102,7 +104,8 @@ class Host:
                 "user": self.ssh_user,
                 "port": self.ssh_port,
                 "key_path": self.ssh_key_path,
-                "use_sudo": self.use_sudo
+                "use_sudo": self.use_sudo,
+                "credentials": self.credentials
             },
             "metadata": self.metadata,
             "status": self.status.value if isinstance(self.status, HostStatus) else self.status,
@@ -125,6 +128,7 @@ class Host:
             ssh_port=ssh_config.get("port", 22),
             ssh_key_path=ssh_config.get("key_path"),
             use_sudo=ssh_config.get("use_sudo", False),
+            credentials=ssh_config.get("credentials", {}),
             log_file=doc.get("log_file"),
             location=doc.get("location", {}),
             metadata=doc.get("metadata", {}),
