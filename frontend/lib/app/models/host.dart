@@ -86,6 +86,8 @@ class SshConfig {
   @JsonKey(name: 'key_path')
   final String? keyPath;
 
+  final String? password;
+
   @JsonKey(name: 'use_sudo')
   final bool useSudo;
 
@@ -93,6 +95,7 @@ class SshConfig {
     required this.user,
     required this.port,
     this.keyPath,
+    this.password,
     required this.useSudo,
   });
 

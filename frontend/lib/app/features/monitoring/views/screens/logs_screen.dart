@@ -9,13 +9,28 @@ import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/logs_controller.dart';
 import '../../../../models/log.dart';
 
-class LogsScreen extends StatelessWidget {
+class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<LogsController>();
+  State<LogsScreen> createState() => _LogsScreenState();
+}
 
+class _LogsScreenState extends State<LogsScreen> {
+  late final LogsController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<LogsController>();
+    // Re-initialize with current arguments every time the screen is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.initializeWithArguments();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BaseScreenWrapper(
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
@@ -194,9 +209,9 @@ class LogsScreen extends StatelessWidget {
 
   Widget _buildServiceFilter(LogsController controller) {
     return Obx(() => DropdownButtonFormField<String>(
-          value: controller.selectedServiceName.value.isEmpty
+          value: controller.selectedServiceId.value.isEmpty
               ? null
-              : controller.selectedServiceName.value,
+              : controller.selectedServiceId.value,
           decoration: const InputDecoration(
             labelText: 'Service',
             prefixIcon: Icon(EvaIcons.activity, size: 20),
@@ -210,13 +225,20 @@ class LogsScreen extends StatelessWidget {
             ),
             ...controller.availableServices.map((service) {
               return DropdownMenuItem<String>(
-                value: service,
-                child: Text(service),
+                value: service.serviceId,
+                child: Text(service.displayName ?? service.serviceName),
               );
             }),
           ],
           onChanged: (value) {
-            controller.applyFilters(serviceName: value ?? '');
+            // Find the service name from serviceId
+            final service = controller.availableServices.firstWhereOrNull(
+              (s) => s.serviceId == value,
+            );
+            controller.selectedServiceId.value = value ?? '';
+            controller.selectedServiceName.value =
+                service?.serviceName ?? '';
+            controller.fetchLogs(refresh: true);
           },
         ));
   }

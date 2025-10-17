@@ -9,13 +9,28 @@ import '../../../../models/managed_service.dart';
 import '../../controllers/managed_services_controller.dart';
 import '../widgets/service_form_dialog.dart';
 
-class ManagedServicesScreen extends StatelessWidget {
+class ManagedServicesScreen extends StatefulWidget {
   const ManagedServicesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.put(ManagedServicesController());
+  State<ManagedServicesScreen> createState() => _ManagedServicesScreenState();
+}
 
+class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
+  late final ManagedServicesController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.find<ManagedServicesController>();
+    // Re-initialize with current arguments every time the screen is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.initializeWithArguments();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return BaseScreenWrapper(
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
@@ -325,7 +340,13 @@ class ManagedServicesScreen extends StatelessWidget {
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildServiceTypeFilter(controller),
+                    Row(
+                      children: [
+                        Expanded(child: _buildHostFilter(controller)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _buildServiceFilter(controller)),
+                      ],
+                    ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -361,7 +382,9 @@ class ManagedServicesScreen extends StatelessWidget {
                 )
               : Row(
                   children: [
-                    Expanded(child: _buildServiceTypeFilter(controller)),
+                    Expanded(child: _buildHostFilter(controller)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildServiceFilter(controller)),
                     const SizedBox(width: 12),
                     Expanded(child: _buildEnvironmentFilter(controller)),
                     const SizedBox(width: 12),
@@ -390,11 +413,38 @@ class ManagedServicesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceTypeFilter(ManagedServicesController controller) {
+  Widget _buildHostFilter(ManagedServicesController controller) {
     return Obx(() => DropdownButtonFormField<String>(
-          value: controller.filterServiceType.value,
+          value: controller.filterHostId.value,
           decoration: const InputDecoration(
-            labelText: 'Service Type',
+            labelText: 'Host',
+            prefixIcon: Icon(EvaIcons.monitorOutline, size: 20),
+            border: OutlineInputBorder(),
+            isDense: true,
+          ),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('All Hosts'),
+            ),
+            ...controller.availableHosts.map((host) {
+              return DropdownMenuItem<String>(
+                value: host.hostId,
+                child: Text('${host.hostname} (${host.ipAddress})'),
+              );
+            }),
+          ],
+          onChanged: (value) {
+            controller.setHostFilter(value);
+          },
+        ));
+  }
+
+  Widget _buildServiceFilter(ManagedServicesController controller) {
+    return Obx(() => DropdownButtonFormField<String>(
+          value: controller.filterServiceId.value,
+          decoration: const InputDecoration(
+            labelText: 'Service',
             prefixIcon: Icon(EvaIcons.cube, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -402,17 +452,17 @@ class ManagedServicesScreen extends StatelessWidget {
           items: [
             const DropdownMenuItem<String>(
               value: null,
-              child: Text('All Types'),
+              child: Text('All Services'),
             ),
-            ...controller.availableServiceTypes.map((type) {
+            ...controller.availableServices.map((service) {
               return DropdownMenuItem<String>(
-                value: type,
-                child: Text(type),
+                value: service.serviceId,
+                child: Text(service.displayName ?? service.serviceName),
               );
             }),
           ],
           onChanged: (value) {
-            controller.setServiceTypeFilter(value);
+            controller.setServiceFilter(value);
           },
         ));
   }

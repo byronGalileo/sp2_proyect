@@ -52,6 +52,7 @@ class HostService {
       headers: {'Content-Type': 'application/json'},
     );
 
+    print(response);
     return ApiResponseHandler.handleResponse<HostResponse>(
       response,
       parser: (json) => HostResponse.fromJson(json),
@@ -70,6 +71,7 @@ class HostService {
     required String sshUser,
     int sshPort = 22,
     String? sshKeyPath,
+    String? sshPassword,
     bool useSudo = true,
     String? os,
     String? purpose,
@@ -86,7 +88,10 @@ class HostService {
       'ssh_config': {
         'user': sshUser,
         'port': sshPort,
-        'key_path': sshKeyPath,
+        if (sshKeyPath != null) 'key_path': sshKeyPath,
+        'credentials': {
+          if (sshPassword != null) 'password': sshPassword,
+        },
         'use_sudo': useSudo,
       },
       'metadata': {
@@ -120,6 +125,7 @@ class HostService {
     String? sshUser,
     int? sshPort,
     String? sshKeyPath,
+    String? sshPassword,
     bool? useSudo,
     String? os,
     String? purpose,
@@ -135,12 +141,16 @@ class HostService {
     if (location != null) body['location'] = location.toJson();
 
     // SSH config
-    if (sshUser != null || sshPort != null || sshKeyPath != null || useSudo != null) {
-      body['ssh_config'] = <String, dynamic>{};
-      if (sshUser != null) body['ssh_config']['user'] = sshUser;
-      if (sshPort != null) body['ssh_config']['port'] = sshPort;
-      if (sshKeyPath != null) body['ssh_config']['key_path'] = sshKeyPath;
-      if (useSudo != null) body['ssh_config']['use_sudo'] = useSudo;
+    if (sshUser != null || sshPort != null || sshKeyPath != null || sshPassword != null || useSudo != null) {
+      final sshConfig = <String, dynamic>{};
+      if (sshUser != null) sshConfig['user'] = sshUser;
+      if (sshPort != null) sshConfig['port'] = sshPort;
+      if (sshKeyPath != null) sshConfig['key_path'] = sshKeyPath;
+      if (useSudo != null) sshConfig['use_sudo'] = useSudo;
+      if (sshPassword != null) {
+        sshConfig['credentials'] = {'password': sshPassword};
+      }
+      body['ssh_config'] = sshConfig;
     }
 
     // Metadata

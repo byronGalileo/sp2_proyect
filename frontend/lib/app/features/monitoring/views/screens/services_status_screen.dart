@@ -6,6 +6,7 @@ import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/services_controller.dart';
+import '../../controllers/logs_controller.dart';
 import '../widgets/service_card.dart';
 import '../widgets/services_statistics.dart';
 
@@ -398,7 +399,14 @@ class ServicesStatusScreen extends StatelessWidget {
                 DataCell(
                   ElevatedButton.icon(
                     onPressed: () {
-                      Get.toNamed('/monitoring/logs', parameters: {'service': service.id});
+                      // Delete existing controller if it exists to force fresh initialization
+                      try {
+                        Get.delete<LogsController>(force: true);
+                      } catch (e) {
+                        // Controller doesn't exist yet, that's fine
+                      }
+                      // Navigate with arguments - service.id is the service name in this context
+                      Get.toNamed('/monitoring/logs', arguments: {'serviceName': service.id});
                     },
                     icon: const Icon(Icons.description, size: 16),
                     label: const Text('Logs'),

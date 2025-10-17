@@ -1,3 +1,4 @@
+import 'package:daily_task/app/utils/helpers/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../models/user.dart';
@@ -60,11 +61,7 @@ class UsersController extends GetxController {
       totalUsers.value = response.total;
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar(
-        'Error',
-        'Failed to load users: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showError(message: 'Failed to load users: $e');
     } finally {
       isLoading.value = false;
     }
@@ -130,21 +127,12 @@ class UsersController extends GetxController {
         phone: phone,
       );
 
-      Get.snackbar(
-        'Success',
-        'User created successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-
+      SnackbarHelper.showSuccess(message: 'User created successfully');
       // Refresh user list
       await loadUsers(refresh: true);
       return true;
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to create user: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showError(message: 'Failed to create user: $e');
       return false;
     } finally {
       isLoading.value = false;
@@ -178,19 +166,11 @@ class UsersController extends GetxController {
         users[index] = updatedUser;
       }
 
-      Get.snackbar(
-        'Success',
-        'User updated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showSuccess(message: 'User updated successfully');
 
       return true;
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to update user: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showError(message: 'Failed to update user: $e');
       return false;
     } finally {
       isLoading.value = false;
@@ -210,17 +190,9 @@ class UsersController extends GetxController {
         users[index] = updatedUser;
       }
 
-      Get.snackbar(
-        'Success',
-        'User activated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showSuccess(message: 'User activated successfully');
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to activate user: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showError(message: 'Failed to activate user: $e');
     } finally {
       isLoading.value = false;
     }
@@ -264,21 +236,9 @@ class UsersController extends GetxController {
         users[index] = updatedUser;
       }
 
-      Get.snackbar(
-        'Success',
-        'User deactivated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[900],
-      );
+      SnackbarHelper.showSuccess(message: 'User deactivated successfully');
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to deactivate user: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-      );
+      SnackbarHelper.showError(message: 'Failed to deactivate user: $e');
     } finally {
       isLoading.value = false;
     }
@@ -303,23 +263,10 @@ class UsersController extends GetxController {
         users[index] = updatedUser;
       }
 
-      Get.snackbar(
-        'Success',
-        'Roles assigned successfully',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[900],
-      );
-
+      SnackbarHelper.showSuccess(message: 'Roles assigned successfully');
       return true;
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to assign roles: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-      );
+      SnackbarHelper.showError(message: 'Failed to assign roles: $e');
       return false;
     } finally {
       isLoading.value = false;
@@ -339,21 +286,10 @@ class UsersController extends GetxController {
         newPassword: newPassword,
       );
 
-      Get.snackbar(
-        'Success',
-        'Password reset successfully',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green[100],
-        colorText: Colors.green[900],
-      );
-
+      SnackbarHelper.showSuccess(message: 'Password reset successfully');
       return true;
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to reset password: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showError(message: 'Failed to reset password: $e');
       return false;
     } finally {
       isLoading.value = false;

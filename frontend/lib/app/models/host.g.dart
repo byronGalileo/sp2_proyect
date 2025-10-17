@@ -59,6 +59,7 @@ SshConfig _$SshConfigFromJson(Map<String, dynamic> json) => SshConfig(
   user: json['user'] as String,
   port: (json['port'] as num).toInt(),
   keyPath: json['key_path'] as String?,
+  password: json['password'] as String?,
   useSudo: json['use_sudo'] as bool,
 );
 
@@ -66,6 +67,7 @@ Map<String, dynamic> _$SshConfigToJson(SshConfig instance) => <String, dynamic>{
   'user': instance.user,
   'port': instance.port,
   'key_path': instance.keyPath,
+  'password': instance.password,
   'use_sudo': instance.useSudo,
 };
 

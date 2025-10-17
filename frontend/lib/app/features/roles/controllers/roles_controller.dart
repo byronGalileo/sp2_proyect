@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../models/role.dart';
 import '../../../models/permission.dart';
 import '../../../utils/services/role_service.dart';
+import '../../../utils/helpers/snackbar_helper.dart';
 
 class RolesController extends GetxController {
   final RoleService _roleService = RoleService();
@@ -34,13 +36,7 @@ class RolesController extends GetxController {
       filteredRoles.value = fetchedRoles;
     } catch (e) {
       errorMessage.value = e.toString();
-      
-      Get.snackbar(
-        'Error',
-        'Failed to load roles: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showError(message: 'Failed to load roles: ${e.toString()}');
     } finally {
       isLoading.value = false;
     }
@@ -53,12 +49,7 @@ class RolesController extends GetxController {
       final permissions = await _roleService.getPermissions();
       availablePermissions.value = permissions;
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to load permissions: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showError(message: 'Failed to load permissions: ${e.toString()}');
     } finally {
       isLoadingPermissions.value = false;
     }
@@ -99,24 +90,14 @@ class RolesController extends GetxController {
         isActive: isActive,
       );
 
-      Get.snackbar(
-        'Success',
-        'Role created successfully',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showSuccess(message: 'Role created successfully');
 
       // Refresh roles list
       await fetchRoles();
       return true;
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar(
-        'Error',
-        'Failed to create role: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showError(message: 'Failed to create role: ${e.toString()}');
       return false;
     } finally {
       isLoading.value = false;
@@ -145,23 +126,14 @@ class RolesController extends GetxController {
         isActive: isActive,
       );
 
-      Get.snackbar(
-        'Success',
-        'Role updated successfully',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      SnackbarHelper.showSuccess(message: 'Role updated successfully');
 
       // Refresh roles list
       await fetchRoles();
       return true;
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar(
-        'Error',
-        'Failed to update role: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showError(message: 'Failed to update role: ${e.toString()}');
       return false;
     } finally {
       isLoading.value = false;
@@ -173,12 +145,7 @@ class RolesController extends GetxController {
     try {
       return await _roleService.getRoleById(roleId);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to load role: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 5),
-      );
+      SnackbarHelper.showError(message: 'Failed to load role: ${e.toString()}');
       return null;
     }
   }

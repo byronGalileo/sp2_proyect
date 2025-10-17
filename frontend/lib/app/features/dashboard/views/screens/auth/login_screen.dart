@@ -1,3 +1,4 @@
+import 'package:daily_task/app/utils/helpers/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../config/app_config.dart';
@@ -57,14 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final errorMsg = authController.errorMessage ?? 'Login failed';
-      Get.snackbar(
-        'Login Failed',
-        errorMsg,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
-      );
+      SnackbarHelper.showSuccess(message: errorMsg);
     }
   }
 
@@ -192,11 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextButton(
               onPressed: () {
                 // TODO: Implement forgot password
-                Get.snackbar(
-                  'Coming Soon',
-                  'Forgot password feature coming soon',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                SnackbarHelper.showWarning(message: 'Forgot password feature coming soon');
               },
               child: const Text('Forgot Password?'),
             ),

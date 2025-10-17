@@ -1,9 +1,12 @@
 import 'package:get/get.dart';
 import '../../../models/log.dart';
+import '../../../models/managed_service.dart';
 import '../../../utils/services/logs_service.dart';
+import '../../../utils/services/managed_service_service.dart';
 
 class LogsController extends GetxController {
   final LogsService _logsService = LogsService();
+  final ManagedServiceService _managedServiceService = ManagedServiceService();
 
   // Observable lists
   final RxList<Log> allLogs = <Log>[].obs; // All fetched logs
@@ -17,19 +20,14 @@ class LogsController extends GetxController {
   final RxInt pageSize = 50.obs;
 
   // Filter observables
+  final RxString selectedServiceId = RxString('');
   final RxString selectedServiceName = RxString('');
   final RxString selectedLogLevel = 'ALL'.obs;
   final RxInt selectedHours = 24.obs;
   final RxInt selectedLimit = 500.obs; // How many logs to fetch from API
 
-  // Dummy service names for dropdown (will be replaced with real data later)
-  final RxList<String> availableServices = <String>[
-    'postgres',
-    'nginx',
-    'redis',
-    'mongodb',
-    'elasticsearch',
-  ].obs;
+  // Available services from API
+  final RxList<ManagedService> availableServices = <ManagedService>[].obs;
 
   final List<String> logLevels = ['ALL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'];
   final List<int> timeRanges = [1, 6, 12, 24, 48, 72, 168]; // hours
@@ -39,11 +37,83 @@ class LogsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Check if we have initial filters from navigation
-    if (Get.parameters.containsKey('service')) {
-      selectedServiceName.value = Get.parameters['service'] ?? '';
+    print('LogsController.onInit() called');
+    print('Get.arguments: ${Get.arguments}');
+
+    // Check if we have serviceId from navigation arguments
+    if (Get.arguments != null && Get.arguments['serviceId'] != null) {
+      selectedServiceId.value = Get.arguments['serviceId'];
+      print('selectedServiceId set to: ${selectedServiceId.value}');
     }
+
+    loadServices();
     fetchLogs();
+  }
+
+  @override
+  void onClose() {
+    print('LogsController.onClose() called');
+    super.onClose();
+  }
+
+  /// Initialize or re-initialize with arguments
+  void initializeWithArguments() {
+    print('initializeWithArguments called');
+    print('Current arguments: ${Get.arguments}');
+
+    // Clear filters first
+    selectedServiceId.value = '';
+    selectedServiceName.value = '';
+    selectedLogLevel.value = 'ALL';
+    selectedHours.value = 24;
+    selectedLimit.value = 500;
+
+    // If serviceName is passed as an argument, set the filter directly
+    if (Get.arguments != null && Get.arguments['serviceName'] != null) {
+      final serviceName = Get.arguments['serviceName'] as String;
+      print('Setting selectedServiceName to: $serviceName');
+      selectedServiceName.value = serviceName;
+
+      // Try to find the matching service to set the serviceId for the dropdown
+      final service = availableServices.firstWhereOrNull(
+        (s) => s.serviceName == serviceName,
+      );
+      if (service != null) {
+        selectedServiceId.value = service.serviceId;
+        print('Found matching serviceId: ${selectedServiceId.value}');
+      }
+    }
+
+    // Reload data with new filters
+    loadServices();
+    fetchLogs(refresh: true);
+  }
+
+  /// Load available services for dropdown filter
+  Future<void> loadServices() async {
+    try {
+      final response = await _managedServiceService.getServices(
+        skip: 0,
+        limit: 1000,
+      );
+      availableServices.value = response.data.services;
+      print('Loaded ${availableServices.length} services');
+
+      // If we have a selectedServiceName but no serviceId yet, find it
+      if (selectedServiceName.value.isNotEmpty &&
+          selectedServiceId.value.isEmpty) {
+        final service = availableServices.firstWhereOrNull(
+          (s) => s.serviceName == selectedServiceName.value,
+        );
+        if (service != null) {
+          selectedServiceId.value = service.serviceId;
+          print('Matched serviceName to serviceId: ${selectedServiceId.value}');
+        }
+      }
+    } catch (e) {
+      print('Error loading services: $e');
+      // Silently fail, not critical
+    }
   }
 
   Future<void> fetchLogs({bool refresh = false}) async {
@@ -135,6 +205,7 @@ class LogsController extends GetxController {
   }
 
   void clearFilters() {
+    selectedServiceId.value = '';
     selectedServiceName.value = '';
     selectedLogLevel.value = 'ALL';
     selectedHours.value = 24;

@@ -24,6 +24,7 @@ class _HostFormDialogState extends State<HostFormDialog> {
   final _sshUserController = TextEditingController();
   final _sshPortController = TextEditingController(text: '22');
   final _sshKeyPathController = TextEditingController();
+  final _sshPasswordController = TextEditingController();
   final _osController = TextEditingController();
   final _purposeController = TextEditingController();
   final _tagsController = TextEditingController();
@@ -32,6 +33,7 @@ class _HostFormDialogState extends State<HostFormDialog> {
   String? _selectedRegion;
   String? _selectedStatus = 'active';
   bool _useSudo = true;
+  bool _obscurePassword = true;
 
   bool get isEditing => widget.host != null;
 
@@ -47,6 +49,7 @@ class _HostFormDialogState extends State<HostFormDialog> {
       _sshUserController.text = widget.host!.sshConfig.user;
       _sshPortController.text = widget.host!.sshConfig.port.toString();
       _sshKeyPathController.text = widget.host!.sshConfig.keyPath ?? '';
+      _sshPasswordController.text = widget.host!.sshConfig.password ?? '';
       _useSudo = widget.host!.sshConfig.useSudo;
       _osController.text = widget.host!.metadata.os ?? '';
       _purposeController.text = widget.host!.metadata.purpose ?? '';
@@ -63,6 +66,7 @@ class _HostFormDialogState extends State<HostFormDialog> {
     _sshUserController.dispose();
     _sshPortController.dispose();
     _sshKeyPathController.dispose();
+    _sshPasswordController.dispose();
     _osController.dispose();
     _purposeController.dispose();
     _tagsController.dispose();
@@ -94,6 +98,9 @@ class _HostFormDialogState extends State<HostFormDialog> {
         sshKeyPath: _sshKeyPathController.text.trim().isEmpty
             ? null
             : _sshKeyPathController.text.trim(),
+        sshPassword: _sshPasswordController.text.trim().isEmpty
+            ? null
+            : _sshPasswordController.text.trim(),
         useSudo: _useSudo,
         os: _osController.text.trim().isEmpty ? null : _osController.text.trim(),
         purpose: _purposeController.text.trim().isEmpty
@@ -113,6 +120,9 @@ class _HostFormDialogState extends State<HostFormDialog> {
         sshKeyPath: _sshKeyPathController.text.trim().isEmpty
             ? null
             : _sshKeyPathController.text.trim(),
+        sshPassword: _sshPasswordController.text.trim().isEmpty
+            ? null
+            : _sshPasswordController.text.trim(),
         useSudo: _useSudo,
         os: _osController.text.trim().isEmpty ? null : _osController.text.trim(),
         purpose: _purposeController.text.trim().isEmpty
@@ -352,10 +362,57 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   const SizedBox(height: 16),
 
                   // SSH Key Path
-                  CustomTextField(
+                  TextFormField(
                     controller: _sshKeyPathController,
-                    label: 'SSH Key Path (optional)',
-                    prefixIcon: Icons.key_outlined,
+                    decoration: InputDecoration(
+                      labelText: 'SSH Key Path (optional)',
+                      prefixIcon: const Icon(Icons.key_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+                      ),
+                    ),
+                    validator: (value) {
+                      // Either key path or password must be provided
+                      if ((value == null || value.trim().isEmpty) &&
+                          _sshPasswordController.text.trim().isEmpty) {
+                        return 'Either SSH key path or password is required';
+                      }
+                      return null;
+                    },
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // SSH Password
+                  TextFormField(
+                    controller: _sshPasswordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'SSH Password (optional)',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      helperText: 'Use either SSH key or password for authentication',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                    validator: (value) {
+                      // Either key path or password must be provided
+                      if ((value == null || value.trim().isEmpty) &&
+                          _sshKeyPathController.text.trim().isEmpty) {
+                        return 'Either SSH key path or password is required';
+                      }
+                      return null;
+                    },
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 16),

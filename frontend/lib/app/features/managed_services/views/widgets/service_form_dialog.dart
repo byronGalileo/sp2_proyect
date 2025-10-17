@@ -326,19 +326,23 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Obx(() => DropdownButtonFormField<String>(
+                        child: DropdownButtonFormField<String>(
                               value: _selectedServiceType,
                               decoration: const InputDecoration(
                                 labelText: 'Service Type *',
                                 border: OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.category),
                               ),
-                              items: controller.availableServiceTypes
-                                  .map((type) => DropdownMenuItem(
-                                        value: type,
-                                        child: Text(type),
-                                      ))
-                                  .toList(),
+                              items: const [
+                                DropdownMenuItem(value: 'mysql', child: Text('MySQL')),
+                                DropdownMenuItem(value: 'nginx', child: Text('Nginx')),
+                                DropdownMenuItem(value: 'apache', child: Text('Apache')),
+                                DropdownMenuItem(value: 'postgresql', child: Text('PostgreSQL')),
+                                DropdownMenuItem(value: 'mongodb', child: Text('MongoDB')),
+                                DropdownMenuItem(value: 'redis', child: Text('Redis')),
+                                DropdownMenuItem(value: 'docker', child: Text('Docker')),
+                                DropdownMenuItem(value: 'ssh', child: Text('SSH')),
+                              ],
                               onChanged: (value) {
                                 setState(() {
                                   _selectedServiceType = value;
@@ -350,7 +354,7 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                                 }
                                 return null;
                               },
-                            )),
+                            ),
                       ),
                     ],
                   ),

@@ -16,16 +16,7 @@ class ManagedServicesController extends GetxController {
   // Observable state
   final RxList<ManagedService> services = <ManagedService>[].obs;
   final RxList<Host> availableHosts = <Host>[].obs;
-  final RxList<String> availableServiceTypes = <String>[
-    'mysql',
-    'nginx',
-    'apache',
-    'postgresql',
-    'mongodb',
-    'redis',
-    'docker',
-    'ssh'
-  ].obs;
+  final RxList<ManagedService> availableServices = <ManagedService>[].obs;
   final RxList<String> availableEnvironments = <String>[
     'dev',
     'staging',
@@ -48,7 +39,7 @@ class ManagedServicesController extends GetxController {
 
   // Filters
   final Rx<String?> filterHostId = Rx<String?>(null);
-  final Rx<String?> filterServiceType = Rx<String?>(null);
+  final Rx<String?> filterServiceId = Rx<String?>(null);
   final Rx<String?> filterEnvironment = Rx<String?>(null);
   final Rx<String?> filterRegion = Rx<String?>(null);
   final Rx<String?> filterStatus = Rx<String?>(null);
@@ -59,12 +50,49 @@ class ManagedServicesController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    print('ManagedServicesController.onInit() called');
+    print('Get.arguments: ${Get.arguments}');
+
     // If hostId is passed as an argument, set the filter
     if (Get.arguments != null && Get.arguments['hostId'] != null) {
       filterHostId.value = Get.arguments['hostId'];
+      print('filterHostId set to: ${filterHostId.value}');
     }
     loadHosts();
+    loadAvailableServices();
     loadServices();
+    loadSummary();
+  }
+
+  @override
+  void onClose() {
+    print('ManagedServicesController.onClose() called');
+    super.onClose();
+  }
+
+  /// Initialize or re-initialize with arguments
+  void initializeWithArguments() {
+    print('initializeWithArguments called');
+    print('Current arguments: ${Get.arguments}');
+
+    // Clear all filters first
+    filterHostId.value = null;
+    filterServiceId.value = null;
+    filterEnvironment.value = null;
+    filterRegion.value = null;
+    filterStatus.value = null;
+
+    // If hostId is passed as an argument, set the filter
+    if (Get.arguments != null && Get.arguments['hostId'] != null) {
+      final hostId = Get.arguments['hostId'] as String;
+      print('Setting filterHostId to: $hostId');
+      filterHostId.value = hostId;
+    }
+
+    // Reload data with new filters
+    loadHosts();
+    loadAvailableServices();
+    loadServices(refresh: true);
     loadSummary();
   }
 
@@ -87,6 +115,20 @@ class ManagedServicesController extends GetxController {
     }
   }
 
+  /// Load available services for dropdown filter
+  Future<void> loadAvailableServices() async {
+    try {
+      final response = await _service.getServices(
+        skip: 0,
+        limit: 1000,
+        hostId: filterHostId.value,
+      );
+      availableServices.value = response.data.services;
+    } catch (e) {
+      // Silently fail, not critical
+    }
+  }
+
   /// Load services with current filters and pagination
   Future<void> loadServices({bool refresh = false}) async {
     try {
@@ -98,23 +140,35 @@ class ManagedServicesController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
+      print('loadServices called with filterHostId: ${filterHostId.value}');
+
       final response = await _service.getServices(
         skip: currentPage.value * pageSize,
         limit: pageSize,
         hostId: filterHostId.value,
-        serviceType: filterServiceType.value,
         environment: filterEnvironment.value,
         region: filterRegion.value,
         status: filterStatus.value,
       );
 
-      if (refresh) {
-        services.value = response.data.services;
-      } else {
-        services.addAll(response.data.services);
+      var filteredServices = response.data.services;
+
+      // Apply client-side service ID filter if set
+      if (filterServiceId.value != null) {
+        filteredServices = filteredServices
+            .where((s) => s.serviceId == filterServiceId.value)
+            .toList();
       }
 
-      totalServices.value = response.data.count;
+      if (refresh) {
+        services.value = filteredServices;
+      } else {
+        services.addAll(filteredServices);
+      }
+
+      totalServices.value = filterServiceId.value != null
+          ? filteredServices.length
+          : response.data.count;
     } on ApiException catch (e) {
       errorMessage.value = e.message;
       Get.snackbar(
@@ -381,12 +435,14 @@ class ManagedServicesController extends GetxController {
   /// Set host filter (used when navigating from hosts screen)
   void setHostFilter(String? hostId) {
     filterHostId.value = hostId;
+    filterServiceId.value = null; // Clear service filter when host changes
+    loadAvailableServices(); // Reload available services for the new host
     loadServices(refresh: true);
   }
 
-  /// Toggle service type filter
-  void setServiceTypeFilter(String? serviceType) {
-    filterServiceType.value = serviceType;
+  /// Set service filter
+  void setServiceFilter(String? serviceId) {
+    filterServiceId.value = serviceId;
     loadServices(refresh: true);
   }
 
@@ -411,10 +467,11 @@ class ManagedServicesController extends GetxController {
   /// Clear all filters
   void clearFilters() {
     filterHostId.value = null;
-    filterServiceType.value = null;
+    filterServiceId.value = null;
     filterEnvironment.value = null;
     filterRegion.value = null;
     filterStatus.value = null;
+    loadAvailableServices(); // Reload all available services
     loadServices(refresh: true);
   }
 
@@ -432,7 +489,7 @@ class ManagedServicesController extends GetxController {
   int get totalPages => (totalServices.value / pageSize).ceil();
   bool get hasActiveFilters =>
       filterHostId.value != null ||
-      filterServiceType.value != null ||
+      filterServiceId.value != null ||
       filterEnvironment.value != null ||
       filterRegion.value != null ||
       filterStatus.value != null;

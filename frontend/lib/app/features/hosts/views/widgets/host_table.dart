@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../config/app_config.dart';
 import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
+import '../../../managed_services/controllers/managed_services_controller.dart';
 
 class HostTable extends StatelessWidget {
   final List<Host> hosts;
@@ -207,8 +208,17 @@ class HostTable extends StatelessWidget {
                         icon: const Icon(EvaIcons.activity, size: 16),
                         onPressed: onViewServices != null
                             ? () => onViewServices!(host)
-                            : () => Get.toNamed('/services/managed-services',
-                                arguments: {'hostId': host.hostId}),
+                            : () {
+                                // Delete existing controller if it exists to force fresh initialization
+                                try {
+                                  Get.delete<ManagedServicesController>(force: true);
+                                } catch (e) {
+                                  // Controller doesn't exist yet, that's fine
+                                }
+                                // Navigate with arguments
+                                Get.toNamed('/services/managed-services',
+                                    arguments: {'hostId': host.hostId});
+                              },
                         tooltip: 'View Services',
                         color: Colors.blue,
                         padding: EdgeInsets.zero,
