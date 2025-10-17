@@ -737,6 +737,11 @@ async def generate_config(
 
             os.makedirs(config_dir, exist_ok=True)
 
+            # Check if config file already exists and remove it
+            if os.path.exists(config_path):
+                logger.info(f"Config file already exists at {config_path}, removing old version")
+                os.remove(config_path)
+
             with open(config_path, 'w') as f:
                 json.dump(config, f, indent=2)
 
