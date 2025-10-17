@@ -96,7 +96,10 @@ Create a new host/server in the system.
     "user": "ubuntu",
     "port": 22,
     "key_path": "/path/to/key.pem",
-    "use_sudo": true
+    "use_sudo": true,
+    "credentials": {
+      "password": "your_sudo_password"
+    }
   },
   "location": {
     "datacenter": "AWS-US-EAST-1",
@@ -111,6 +114,14 @@ Create a new host/server in the system.
   "status": "active"
 }
 ```
+
+**SSH Config Fields:**
+- `user` (required): SSH username
+- `port` (optional, default: 22): SSH port
+- `key_path` (optional): Path to SSH private key file
+- `use_sudo` (optional, default: false): Whether to use sudo for systemctl commands
+- `credentials` (optional): Authentication credentials
+  - `password` (optional): Password for sudo authentication (used with `sudo -S`)
 
 **Response:**
 ```json
@@ -448,7 +459,10 @@ curl -X POST "http://localhost:8000/hosts" \
     "ssh_config": {
       "user": "ubuntu",
       "port": 22,
-      "use_sudo": true
+      "use_sudo": true,
+      "credentials": {
+        "password": "your_sudo_password"
+      }
     },
     "metadata": {
       "os": "Ubuntu 22.04",
@@ -550,7 +564,10 @@ host_data = {
     "ssh_config": {
         "user": "ubuntu",
         "port": 22,
-        "use_sudo": True
+        "use_sudo": True,
+        "credentials": {
+            "password": "your_sudo_password"
+        }
     }
 }
 
@@ -664,6 +681,90 @@ Common HTTP status codes:
 3. **Configure alerting** channels (email, Slack, PagerDuty)
 4. **Build dashboard** UI to visualize service health
 5. **Add authentication** for production deployment
+
+---
+
+## Credentials and Authentication
+
+### Using Sudo with Password
+
+When `use_sudo` is enabled and credentials are provided, the system uses `sudo -S` to execute systemctl commands with the provided password.
+
+**Example Configuration:**
+```json
+{
+  "ssh_config": {
+    "user": "ubuntu",
+    "port": 22,
+    "use_sudo": true,
+    "credentials": {
+      "password": "your_sudo_password"
+    }
+  }
+}
+```
+
+**Generated Config Output:**
+```json
+{
+  "targets": [
+    {
+      "host": "web-server",
+      "name": "nginx",
+      "service": "nginx.service",
+      "use_sudo": true,
+      "credentials": {
+        "password": "your_sudo_password"
+      }
+    }
+  ]
+}
+```
+
+**How it works:**
+1. Monitor reads the credentials from config.json
+2. When service needs remediation, it uses: `echo 'password' | sudo -S systemctl restart service`
+3. Password is passed securely through stdin to sudo
+
+### Security Considerations
+
+**Important Security Notes:**
+- Passwords are stored in plain text in the database and config files
+- Ensure proper file permissions: `chmod 600 config.json`
+- Use SSH keys when possible instead of passwords
+- Consider using NOPASSWD in sudoers for monitoring user
+- For production, consider using secrets management (HashiCorp Vault, AWS Secrets Manager)
+
+**Alternative: SSH Keys with NOPASSWD Sudo**
+```json
+{
+  "ssh_config": {
+    "user": "ubuntu",
+    "port": 22,
+    "key_path": "/home/user/.ssh/monitoring_key",
+    "use_sudo": true
+  }
+}
+```
+
+Then configure sudoers on the target host:
+```bash
+# /etc/sudoers.d/monitoring
+ubuntu ALL=(ALL) NOPASSWD: /bin/systemctl restart *, /bin/systemctl start *, /bin/systemctl stop *
+```
+
+### Local vs SSH Methods
+
+**Local Method:**
+- Runs on the same machine as the monitor
+- Uses local systemctl commands
+- Credentials used for `sudo -S` if `use_sudo: true`
+
+**SSH Method:**
+- Connects to remote hosts via SSH
+- Uses SSH keys for authentication
+- Credentials not typically used (SSH handles auth)
+- `use_sudo` applies to remote systemctl commands
 
 ---
 
