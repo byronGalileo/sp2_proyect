@@ -1,8 +1,28 @@
 import time
+import sys
+import os
 from typing import Dict, Any
+
+# Add project root to path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from .config_loader import TargetConfig
 from .service_checker import ServiceChecker
 from .logger_manager import LoggerManager
+
+# Import notification system (optional, won't break if not available)
+try:
+    from notifications import (
+        notification_manager,
+        NotificationEventType,
+        create_notification_message
+    )
+    NOTIFICATIONS_AVAILABLE = True
+except ImportError:
+    NOTIFICATIONS_AVAILABLE = False
+    print("Warning: Notification system not available")
 
 class ServiceMonitor:
     """Main service monitoring orchestrator"""
@@ -45,11 +65,24 @@ class ServiceMonitor:
         if not status_result.is_active and target.recover_on_down:
             if status_result.error:
                 self.logger.warning(f"[{target.name}] Cannot remediate due to status check error: {status_result.error}")
+                # Send notification about service down (cannot remediate)
+                self._send_notification(
+                    target,
+                    NotificationEventType.SERVICE_DOWN,
+                    metadata={'error': status_result.error}
+                )
                 return
 
             self.logger.warning(
                 f"[{target.name}] Service '{target.service}' is not active "
                 f"(status={status_result.status}). Attempting {target.recover_action}..."
+            )
+
+            # Send notification: service restart attempt
+            self._send_notification(
+                target,
+                NotificationEventType.SERVICE_RESTART_ATTEMPT,
+                metadata={'action': target.recover_action, 'status': status_result.status}
             )
 
             # Attempt remediation
@@ -73,8 +106,62 @@ class ServiceMonitor:
                 error_details=remediation_result.stderr if not remediation_result.success else None
             )
 
+            # Send notification based on remediation result
+            if remediation_result.success:
+                self._send_notification(
+                    target,
+                    NotificationEventType.SERVICE_RECOVERED,
+                    metadata={'action': target.recover_action}
+                )
+            else:
+                self._send_notification(
+                    target,
+                    NotificationEventType.SERVICE_RESTART_FAILED,
+                    metadata={
+                        'action': target.recover_action,
+                        'error': remediation_result.stderr or 'Unknown error',
+                        'return_code': remediation_result.return_code
+                    }
+                )
+
         elif not status_result.is_active and not target.recover_on_down:
             self.logger.warning(f"[{target.name}] Service not active but recovery is disabled")
+            # Send notification: service down (recovery disabled)
+            self._send_notification(
+                target,
+                NotificationEventType.SERVICE_DOWN,
+                metadata={'recovery_disabled': True}
+            )
+
+    def _send_notification(
+        self,
+        target: TargetConfig,
+        event_type: 'NotificationEventType',
+        metadata: Dict[str, Any] = None
+    ) -> None:
+        """Send notification for service event"""
+        if not NOTIFICATIONS_AVAILABLE:
+            return
+
+        try:
+            # Create notification message
+            message = create_notification_message(
+                event_type,
+                target.service,
+                target.host,
+                metadata
+            )
+
+            # Send notification
+            notification_manager.send_service_notification(
+                service_name=target.service,
+                host=target.host,
+                event_type=event_type,
+                message=message,
+                metadata=metadata
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to send notification for {target.service}: {e}")
 
     def initialize_schedule(self, targets: list) -> None:
         """Initialize monitoring schedule for all targets"""

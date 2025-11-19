@@ -18,3 +18,7 @@ pydantic>=1.10.24
 
 # Process management
 psutil>=5.9.0
+
+# AWS SDK for notifications (SNS for SMS, SES for email)
+boto3>=1.28.0
+botocore>=1.31.0

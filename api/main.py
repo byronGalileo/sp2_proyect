@@ -33,6 +33,7 @@ import uvicorn
 
 from database import log_operations, LogLevel
 from api.routers import hosts_router, services_router, config_router, monitoring_router
+from api.notification_router import router as notification_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -52,6 +53,7 @@ app.include_router(hosts_router)
 app.include_router(services_router)
 app.include_router(config_router)
 app.include_router(monitoring_router)
+app.include_router(notification_router)
 
 # CORS middleware
 app.add_middleware(
@@ -115,6 +117,7 @@ async def root():
             "monitor_status": "/monitoring/status",
             "monitor_control": "/monitoring/control",
             "monitor_configs": "/monitoring/configs",
+            "notifications": "/notifications",
             "documentation": "/docs"
         }
     }
