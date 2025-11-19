@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../models/service.dart';
 
 class ServiceCard extends StatelessWidget {
@@ -80,7 +81,10 @@ class ServiceCard extends StatelessWidget {
       if (service.serviceType != null && service.serviceType != 'unknown') ...[
         const SizedBox(height: 8),
         Chip(
-          label: Text(service.serviceType!),
+          label: Text(
+            service.serviceType!,
+            style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
+            ),
           visualDensity: VisualDensity.compact,
         ),
       ],

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../models/role.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
@@ -37,74 +39,104 @@ class RolesScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(AppConfig.padding),
-          child: _buildHeader(context, showMenuButton: true),
+        _buildHeader(context, showMenuButton: true),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConfig.padding),
+            child: Column(
+              children: [
+                _buildSearchBar(context),
+                const SizedBox(height: 16),
+                _buildRolesList(context, isMobile: true),
+              ],
+            ),
+          ),
         ),
-        _buildSearchBar(context),
-        Expanded(child: _buildRolesList(context, isMobile: true)),
       ],
     );
   }
 
   Widget _buildTabletLayout(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConfig.padding),
-        child: Column(
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 16),
-            _buildSearchBar(context),
-            const SizedBox(height: 16),
-            _buildRolesTable(context),
-          ],
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConfig.padding),
+            child: Column(
+              children: [
+                _buildSearchBar(context),
+                const SizedBox(height: 16),
+                _buildRolesTable(context),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConfig.padding * 2),
-        child: Column(
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 16),
-            _buildSearchBar(context),
-            const SizedBox(height: 16),
-            _buildRolesTable(context),
-          ],
+    return Column(
+      children: [
+        _buildHeader(context),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppConfig.padding * 2),
+            child: Column(
+              children: [
+                _buildSearchBar(context),
+                const SizedBox(height: 16),
+                _buildRolesTable(context),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildHeader(BuildContext context, {bool showMenuButton = false}) {
-    return Row(
-      children: [
-        if (showMenuButton) ...[
-          const DrawerMenuButton(),
-          const SizedBox(width: 8),
-        ],
-        Expanded(
-          child: Text(
-            'Roles Management',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+    return Container(
+      padding: const EdgeInsets.all(AppConfig.padding),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () {
-            final controller = Get.find<RolesController>();
-            controller.fetchRoles();
-          },
-          tooltip: 'Refresh',
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        children: [
+          if (showMenuButton) ...[
+            const DrawerMenuButton(),
+            const SizedBox(width: 8),
+          ],
+          const Icon(EvaIcons.shieldOutline, size: 24, color: AppColors.accentOrange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Roles Management',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnPrimary,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+            onPressed: () {
+              final controller = Get.find<RolesController>();
+              controller.fetchRoles();
+            },
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
     );
   }
 
@@ -112,7 +144,7 @@ class RolesScreen extends StatelessWidget {
     final controller = Get.find<RolesController>();
 
     return Padding(
-      padding: const EdgeInsets.all(AppConfig.padding),
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding),
       child: TextField(
         decoration: InputDecoration(
           hintText: 'Search roles...',
@@ -141,13 +173,13 @@ class RolesScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+              const Icon(EvaIcons.inbox, size: 64, color: AppColors.textLight),
               const SizedBox(height: 16),
               Text(
                 'No roles found',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -158,7 +190,8 @@ class RolesScreen extends StatelessWidget {
       return RefreshIndicator(
         onRefresh: () => controller.fetchRoles(),
         child: ListView.builder(
-          padding: const EdgeInsets.all(AppConfig.padding),
+          // Padding is handled by the SingleChildScrollView in the layout methods
+          // padding: const EdgeInsets.all(AppConfig.padding),
           itemCount: controller.filteredRoles.length,
           itemBuilder: (context, index) {
             final role = controller.filteredRoles[index];
@@ -241,9 +274,9 @@ class RolesScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           role.name,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -255,12 +288,12 @@ class RolesScreen extends StatelessWidget {
                       style: const TextStyle(fontSize: 12),
                     ),
                     backgroundColor: role.isActive
-                        ? Colors.green[100]
-                        : Colors.grey[300],
+                        ? AppColors.success.withOpacity(0.2)
+                        : AppColors.textSecondary.withOpacity(0.2),
                     avatar: Icon(
                       role.isActive ? Icons.check_circle : Icons.cancel,
                       size: 16,
-                      color: role.isActive ? Colors.green : Colors.grey,
+                      color: role.isActive ? AppColors.success : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -271,7 +304,7 @@ class RolesScreen extends StatelessWidget {
                   role.description!,
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.grey[700],
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -285,12 +318,12 @@ class RolesScreen extends StatelessWidget {
                   _buildInfoChip(
                     icon: Icons.security,
                     label: '${role.permissions.length} permissions',
-                    color: Colors.blue,
+                    color: AppColors.info,
                   ),
                   _buildInfoChip(
                     icon: Icons.calendar_today,
                     label: createdDate,
-                    color: Colors.grey,
+                    color: AppColors.textSecondary,
                   ),
                 ],
               ),
@@ -343,13 +376,13 @@ class RolesScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
+              const Icon(EvaIcons.inbox, size: 64, color: AppColors.textLight),
               const SizedBox(height: 16),
               Text(
                 'No roles found',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -361,12 +394,18 @@ class RolesScreen extends StatelessWidget {
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+          side: BorderSide(color: AppColors.border.withOpacity(0.5)),
         ),
         child: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: DataTable(
+            headingTextStyle: Theme.of(context)
+                .textTheme
+                .titleSmall
+                ?.copyWith(
+                    fontWeight: FontWeight.bold, color: AppColors.textPrimary),
             headingRowColor: MaterialStateProperty.all(
-              Theme.of(context).primaryColor.withOpacity(0.1),
+              Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
             ),
             columns: const [
               DataColumn(label: Text('Name')),
@@ -387,20 +426,17 @@ class RolesScreen extends StatelessWidget {
                   DataCell(Text(role.name)),
                   DataCell(Text(role.displayName)),
                   DataCell(
-                    Chip(
-                      label: Text(
-                        role.isActive ? 'Active' : 'Inactive',
-                        style: const TextStyle(fontSize: 11),
+                    SizedBox(
+                      width: 100, // Set your desired width here
+                      child: Chip(
+                        label: Text(
+                          role.isActive ? 'Active' : 'Inactive',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        backgroundColor: (role.isActive ? AppColors.success : AppColors.textSecondary).withOpacity(0.2),
+                        avatar: Icon(role.isActive ? Icons.check_circle : Icons.cancel, size: 14, color: role.isActive ? Colors.green : Colors.grey),
+                        padding: const EdgeInsets.all(4),
                       ),
-                      backgroundColor: role.isActive
-                          ? Colors.green[100]
-                          : Colors.grey[300],
-                      avatar: Icon(
-                        role.isActive ? Icons.check_circle : Icons.cancel,
-                        size: 14,
-                        color: role.isActive ? Colors.green : Colors.grey,
-                      ),
-                      padding: const EdgeInsets.all(4),
                     ),
                   ),
                   DataCell(
@@ -410,7 +446,7 @@ class RolesScreen extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blue[100],
+                        color: AppColors.info.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -418,7 +454,7 @@ class RolesScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
+                          color: AppColors.info,
                         ),
                       ),
                     ),
@@ -431,7 +467,7 @@ class RolesScreen extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.orange[100],
+                              color: AppColors.warning.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -444,7 +480,7 @@ class RolesScreen extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.orange,
+                                    color: AppColors.warning,
                                   ),
                                 ),
                               ],

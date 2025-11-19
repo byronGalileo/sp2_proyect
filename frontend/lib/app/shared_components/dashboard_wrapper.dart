@@ -3,7 +3,6 @@ import 'package:daily_task/app/shared_components/app_sidebar.dart';
 import 'package:daily_task/app/shared_components/responsive_builder.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class DashboardWrapper extends StatefulWidget {
   const DashboardWrapper({super.key});

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
@@ -47,11 +48,11 @@ class ServicesStatusScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(EvaIcons.alertCircle, size: 64, color: Colors.red),
+                    const Icon(EvaIcons.alertCircle, size: 64, color: AppColors.error),
                     const SizedBox(height: 16),
                     Text(
                       'Error loading services',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textOnPrimary),
                     ),
                     const SizedBox(height: 8),
                     Padding(
@@ -59,7 +60,7 @@ class ServicesStatusScreen extends StatelessWidget {
                       child: Text(
                         controller.errorMessage.value,
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -182,11 +183,11 @@ class ServicesStatusScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.primaryDark,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -199,11 +200,14 @@ class ServicesStatusScreen extends StatelessWidget {
                 const DrawerMenuButton(),
                 const SizedBox(width: 8),
               ],
-              const Icon(EvaIcons.activity, size: 24),
+              const Icon(EvaIcons.activity, size: 24, color: AppColors.accentOrange),
               const SizedBox(width: 12),
               Text(
                 'Services Status',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.textOnPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const Spacer(),
               Obx(() {
@@ -212,7 +216,7 @@ class ServicesStatusScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(right: 8),
                     child: Text(
                       'Last updated: ${_formatLastUpdated(controller.lastUpdated.value)}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
                     ),
                   );
                 }
@@ -225,7 +229,7 @@ class ServicesStatusScreen extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.refresh)),
+                    : const Icon(Icons.refresh, color: AppColors.textOnPrimary)),
                 onPressed: controller.isLoading.value ? null : controller.refresh,
                 tooltip: 'Refresh',
               ),
@@ -250,11 +254,11 @@ class ServicesStatusScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(EvaIcons.alertCircle, size: 64, color: Colors.red),
+          const Icon(EvaIcons.alertCircle, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             'Error loading services',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textOnPrimary),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -262,7 +266,7 @@ class ServicesStatusScreen extends StatelessWidget {
             child: Text(
               controller.errorMessage.value,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
             ),
           ),
           const SizedBox(height: 16),
@@ -278,16 +282,26 @@ class ServicesStatusScreen extends StatelessWidget {
 
   Widget _buildServicesTable(BuildContext context, ServicesController controller) {
     return Card(
-      elevation: 2,
+      elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+        side: BorderSide(color: AppColors.border.withOpacity(0.5)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
+          headingTextStyle: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(
+                  fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           headingRowColor: WidgetStateProperty.all(
-            Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
           ),
+          dataTextStyle: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: AppColors.textSecondary, fontSize: 13),
           columns: const [
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Service ID')),
@@ -307,15 +321,15 @@ class ServicesStatusScreen extends StatelessWidget {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: _getStatusColor(service.latestLevel),
+                      color: _getLevelColor(service.latestLevel),
                       shape: BoxShape.circle,
                     ),
                   ),
                 ),
                 DataCell(
                   Text(
-                    service.id,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    service.id, // Assuming service.id is the service name
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                 ),
                 DataCell(Text(service.host ?? 'N/A')),
@@ -324,15 +338,15 @@ class ServicesStatusScreen extends StatelessWidget {
                       ? Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(service.latestLevel).withValues(alpha: 0.15),
+                            color: _getLevelColor(service.latestLevel).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             service.latestLevel!,
-                            style: TextStyle(
+                            style: TextStyle( // Use _getLevelColor for text
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: _getStatusColor(service.latestLevel),
+                              color: _getLevelColor(service.latestLevel),
                             ),
                           ),
                         )
@@ -342,15 +356,15 @@ class ServicesStatusScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.blue[100],
+                      color: AppColors.info.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       service.totalLogs.toString(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
+                        color: AppColors.info,
                       ),
                     ),
                   ),
@@ -359,15 +373,15 @@ class ServicesStatusScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: service.unsentLogs > 0 ? Colors.orange[100] : Colors.grey[200],
+                      color: (service.unsentLogs > 0 ? AppColors.warning : AppColors.textSecondary).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       service.unsentLogs.toString(),
-                      style: TextStyle(
+                      style: TextStyle( // Use semantic colors for unsent logs
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: service.unsentLogs > 0 ? Colors.orange[700] : Colors.grey[600],
+                        color: service.unsentLogs > 0 ? AppColors.warning : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -375,9 +389,10 @@ class ServicesStatusScreen extends StatelessWidget {
                 DataCell(
                   service.serviceType != null && service.serviceType != 'unknown'
                       ? Chip(
+                          backgroundColor: AppColors.primaryBase.withOpacity(0.1),
                           label: Text(
-                            service.serviceType!,
-                            style: const TextStyle(fontSize: 10),
+                            service.serviceType ?? 'unknown',
+                            style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
                           ),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
@@ -392,7 +407,7 @@ class ServicesStatusScreen extends StatelessWidget {
                         : 'N/A',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -408,9 +423,11 @@ class ServicesStatusScreen extends StatelessWidget {
                       // Navigate with arguments - service.id is the service name in this context
                       Get.toNamed('/monitoring/logs', arguments: {'serviceName': service.id});
                     },
-                    icon: const Icon(Icons.description, size: 16),
+                    icon: const Icon(Icons.description, size: 16, color: AppColors.textOnPrimary),
                     label: const Text('Logs'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBase,
+                      foregroundColor: AppColors.textOnPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -425,19 +442,19 @@ class ServicesStatusScreen extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String? level) {
+  Color _getLevelColor(String? level) {
     if (level == null) return Colors.grey;
     switch (level.toUpperCase()) {
       case 'ERROR':
-        return Colors.red;
+        return AppColors.error;
       case 'WARNING':
-        return Colors.orange;
+        return AppColors.warning;
       case 'INFO':
-        return Colors.blue;
+        return AppColors.info;
       case 'DEBUG':
-        return Colors.green;
+        return AppColors.success;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 

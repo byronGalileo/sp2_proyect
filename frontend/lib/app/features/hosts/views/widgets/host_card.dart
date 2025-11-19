@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:get/get.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
 
@@ -115,7 +116,10 @@ class HostCard extends StatelessWidget {
                 runSpacing: 6,
                 children: host.metadata.tags.map((tag) {
                   return Chip(
-                    label: Text(tag, style: const TextStyle(fontSize: 10)),
+                    label: Text(
+                      tag, 
+                      style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary)
+                      ),
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

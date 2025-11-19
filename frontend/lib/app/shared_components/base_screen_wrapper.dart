@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/themes/app_theme.dart';
 import 'app_sidebar.dart';
 import 'responsive_builder.dart';
 
@@ -54,37 +55,40 @@ class _BaseScreenWrapperState extends State<BaseScreenWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
+      backgroundColor: AppColors.background,
       drawer: !ResponsiveBuilder.isDesktop(context) && widget.showSidebar
           ? Drawer(
+              backgroundColor: AppColors.primaryDark,
               child: SafeArea(
-                child: SingleChildScrollView(
-                  child: widget.customSidebar ??
-                      AppSidebar(
-                        onItemSelected: () {
-                          _scaffoldKey.currentState?.closeDrawer();
-                        },
-                      ),
-                ),
+                child: widget.customSidebar ??
+                    AppSidebar(
+                      onItemSelected: () {
+                        _scaffoldKey.currentState?.closeDrawer();
+                      },
+                    ),
               ),
             )
           : null,
       body: SafeArea(
-        child: ResponsiveBuilder(
-          mobileBuilder: (context, constraints) {
-            return widget.child;
-          },
-          tabletBuilder: (context, constraints) {
-            if (!widget.showSidebar) {
+        child: Container(
+          color: AppColors.background,
+          child: ResponsiveBuilder(
+            mobileBuilder: (context, constraints) {
               return widget.child;
-            }
-            return _buildLayoutWithSidebar(context, constraints);
-          },
-          desktopBuilder: (context, constraints) {
-            if (!widget.showSidebar) {
-              return widget.child;
-            }
-            return _buildLayoutWithSidebar(context, constraints);
-          },
+            },
+            tabletBuilder: (context, constraints) {
+              if (!widget.showSidebar) {
+                return widget.child;
+              }
+              return _buildLayoutWithSidebar(context, constraints);
+            },
+            desktopBuilder: (context, constraints) {
+              if (!widget.showSidebar) {
+                return widget.child;
+              }
+              return _buildLayoutWithSidebar(context, constraints);
+            },
+          ),
         ),
       ),
       floatingActionButton: widget.floatingActionButton,
@@ -93,19 +97,17 @@ class _BaseScreenWrapperState extends State<BaseScreenWrapper> {
 
   Widget _buildLayoutWithSidebar(BuildContext context, BoxConstraints constraints) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Sidebar section
         Flexible(
           flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: SingleChildScrollView(
-            child: widget.customSidebar ??
-                AppSidebar(
-                  onItemSelected: () {
-                    _scaffoldKey.currentState?.closeDrawer();
-                  },
-                ),
-          ),
+          child: widget.customSidebar ??
+              AppSidebar(
+                onItemSelected: () {
+                  _scaffoldKey.currentState?.closeDrawer();
+                },
+              ),
         ),
         // Divider
         const VerticalDivider(width: 1),
@@ -134,7 +136,7 @@ class DrawerMenuButton extends StatelessWidget {
     }
 
     return IconButton(
-      icon: const Icon(Icons.menu),
+      icon: const Icon(Icons.menu, color: AppColors.textOnPrimary),
       onPressed: () {
         Scaffold.of(context).openDrawer();
       },

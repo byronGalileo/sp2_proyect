@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../config/themes/app_theme.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
 import '../../../../shared_components/responsive_builder.dart';
@@ -20,6 +21,13 @@ class HostsScreen extends StatelessWidget {
     final controller = Get.put(HostsController());
 
     return BaseScreenWrapper(
+      floatingActionButton: MediaQuery.of(context).size.width < 900
+          ? FloatingActionButton.extended(
+              onPressed: () => _showHostDialog(context),
+              icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+              label: const Text('Add Host'),
+            )
+          : null,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
           return _buildMobileLayout(context, controller);
@@ -37,7 +45,7 @@ class HostsScreen extends StatelessWidget {
   Widget _buildMobileLayout(BuildContext context, HostsController controller) {
     return Column(
       children: [
-        _buildHeader(context, controller, showMenuButton: true),
+        _buildHeader(context, controller, showMenuButton: true, showAddButton: false),
         _buildFilters(context, controller),
         Expanded(
           child: Obx(() {
@@ -170,15 +178,16 @@ class HostsScreen extends StatelessWidget {
     BuildContext context,
     HostsController controller, {
     bool showMenuButton = false,
+    bool showAddButton = true,
   }) {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.primaryDark,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -189,13 +198,18 @@ class HostsScreen extends StatelessWidget {
             const DrawerMenuButton(),
             const SizedBox(width: 8),
           ],
-          const Icon(EvaIcons.hardDrive, size: 24),
+          const Icon(EvaIcons.hardDrive, size: 24, color: AppColors.accentOrange),
           const SizedBox(width: 12),
-          Text(
-            'Host Management',
-            style: Theme.of(context).textTheme.titleLarge,
+          Expanded(
+            child: Text(
+              'Host Management',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textOnPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const Spacer(),
           IconButton(
             icon: Obx(() => controller.isLoading.value
                 ? const SizedBox(
@@ -203,16 +217,18 @@ class HostsScreen extends StatelessWidget {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.refresh)),
+                : const Icon(Icons.refresh, color: AppColors.textOnPrimary)),
             onPressed: controller.isLoading.value ? null : controller.refresh,
             tooltip: 'Refresh',
           ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
-            onPressed: () => _showHostDialog(context),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Host'),
-          ),
+          if (showAddButton) ...[
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () => _showHostDialog(context),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Add Host'),
+            ),
+          ],
         ],
       ),
     );
@@ -225,16 +241,23 @@ class HostsScreen extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(AppConfig.padding),
           decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
-            ),
+            color: AppColors.primaryDark.withOpacity(0.5),
           ),
-          child: isCompact
-              ? Column(
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              inputDecorationTheme:
+                  Theme.of(context).inputDecorationTheme.copyWith(
+                        labelStyle: const TextStyle(color: AppColors.textLight),
+                        prefixIconColor: AppColors.textLight,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                              color: AppColors.accentOrange, width: 2),
+                        ),
+                      ),
+            ),
+            child: isCompact
+                ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildEnvironmentFilter(controller),
@@ -261,8 +284,8 @@ class HostsScreen extends StatelessWidget {
                             icon: const Icon(Icons.clear, size: 18),
                             label: const Text('Clear'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[300],
-                              foregroundColor: Colors.black87,
+                              backgroundColor: AppColors.border,
+                              foregroundColor: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -270,7 +293,7 @@ class HostsScreen extends StatelessWidget {
                     ),
                   ],
                 )
-              : Row(
+                : Row(
                   children: [
                     Expanded(child: _buildEnvironmentFilter(controller)),
                     const SizedBox(width: 12),
@@ -288,12 +311,13 @@ class HostsScreen extends StatelessWidget {
                       icon: const Icon(Icons.clear, size: 18),
                       label: const Text('Clear Filters'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[300],
-                        foregroundColor: Colors.black87,
+                        backgroundColor: AppColors.border,
+                        foregroundColor: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
+          ),
         );
       },
     );
@@ -308,6 +332,9 @@ class HostsScreen extends StatelessWidget {
             border: OutlineInputBorder(),
             isDense: true,
           ),
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           items: [
             const DropdownMenuItem<String>(
               value: null,
@@ -316,7 +343,7 @@ class HostsScreen extends StatelessWidget {
             ...controller.availableEnvironments.map((env) {
               return DropdownMenuItem<String>(
                 value: env,
-                child: Text(env),
+                child: Text(env, style: const TextStyle(color: AppColors.textOnPrimary)),
               );
             }),
           ],
@@ -335,6 +362,9 @@ class HostsScreen extends StatelessWidget {
             border: OutlineInputBorder(),
             isDense: true,
           ),
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           items: [
             const DropdownMenuItem<String>(
               value: null,
@@ -343,7 +373,8 @@ class HostsScreen extends StatelessWidget {
             ...controller.availableRegions.map((region) {
               return DropdownMenuItem<String>(
                 value: region,
-                child: Text(region),
+                child: Text(region,
+                    style: const TextStyle(color: AppColors.textOnPrimary)),
               );
             }),
           ],
@@ -362,6 +393,9 @@ class HostsScreen extends StatelessWidget {
             border: OutlineInputBorder(),
             isDense: true,
           ),
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           items: const [
             DropdownMenuItem<String>(
               value: null,
@@ -369,15 +403,18 @@ class HostsScreen extends StatelessWidget {
             ),
             DropdownMenuItem<String>(
               value: 'active',
-              child: Text('active'),
+              child:
+                  Text('active', style: TextStyle(color: AppColors.textOnPrimary)),
             ),
             DropdownMenuItem<String>(
               value: 'inactive',
-              child: Text('inactive'),
+              child: Text('inactive',
+                  style: TextStyle(color: AppColors.textOnPrimary)),
             ),
             DropdownMenuItem<String>(
               value: 'maintenance',
-              child: Text('maintenance'),
+              child: Text('maintenance',
+                  style: TextStyle(color: AppColors.textOnPrimary)),
             ),
           ],
           onChanged: (value) {
@@ -391,11 +428,13 @@ class HostsScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(EvaIcons.alertCircle, size: 64, color: Colors.red),
+          const Icon(EvaIcons.alertCircle, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             'Error loading hosts',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge?.copyWith(color: AppColors.textOnPrimary),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -403,7 +442,8 @@ class HostsScreen extends StatelessWidget {
             child: Text(
               controller.errorMessage.value,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context)
+                  .textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
             ),
           ),
           const SizedBox(height: 16),
@@ -424,30 +464,28 @@ class HostsScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(AppConfig.padding),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).dividerColor,
-            ),
-          ),
+          color: AppColors.primaryDark.withOpacity(0.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Page ${controller.currentPageNumber} of ${controller.totalPages}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.textLight),
             ),
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, color: AppColors.textLight),
                   onPressed: controller.hasPrevious
                       ? controller.loadPreviousPage
                       : null,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, color: AppColors.textLight),
                   onPressed:
                       controller.hasMore ? controller.loadNextPage : null,
                 ),

@@ -1,4 +1,4 @@
-import 'package:daily_task/app/constans/app_constants.dart';
+import '../config/themes/app_theme.dart';
 import 'package:daily_task/app/features/auth/controllers/auth_controller.dart';
 import 'package:daily_task/app/config/routes/app_pages.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +25,7 @@ class AuthUserProfile extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.all(10),
           child: InkWell(
-            borderRadius: BorderRadius.circular(kBorderRadius),
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _showProfileMenu(context),
             child: Padding(
               padding: const EdgeInsets.all(10),
@@ -33,7 +33,7 @@ class AuthUserProfile extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: AppColors.primaryBase,
                     child: user.avatarUrl != null
                         ? ClipOval(
                             child: Image.network(
@@ -58,16 +58,16 @@ class AuthUserProfile extends StatelessWidget {
                           user.fullName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: kFontColorPallets[0],
+                            color: AppColors.textOnPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           user.email,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.w300,
-                            color: kFontColorPallets[1],
+                            color: AppColors.textLight,
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -76,9 +76,9 @@ class AuthUserProfile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(
+                  const Icon(
                     Icons.keyboard_arrow_down,
-                    color: kFontColorPallets[1],
+                    color: AppColors.textLight,
                   ),
                 ],
               ),
@@ -95,7 +95,7 @@ class AuthUserProfile extends StatelessWidget {
       style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: AppColors.textOnPrimary,
       ),
     );
   }
@@ -132,7 +132,7 @@ class AuthUserProfile extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: Theme.of(context).primaryColor,
+                    backgroundColor: AppColors.primaryBase,
                     child: user.avatarUrl != null
                         ? ClipOval(
                             child: Image.network(
@@ -146,7 +146,7 @@ class AuthUserProfile extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: AppColors.textOnPrimary,
                                   ),
                                 );
                               },
@@ -157,7 +157,7 @@ class AuthUserProfile extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: AppColors.textOnPrimary,
                             ),
                           ),
                   ),
@@ -177,9 +177,7 @@ class AuthUserProfile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           user.email,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[600],
-                              ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -196,9 +194,9 @@ class AuthUserProfile extends StatelessWidget {
         // View Profile
         PopupMenuItem(
           child: Row(
-            children: const [
-              Icon(Icons.person, size: 20),
-              SizedBox(width: 12),
+            children: [
+              Icon(Icons.person, size: 20, color: AppColors.textSecondary),
+              const SizedBox(width: 12),
               Text('View Profile'),
             ],
           ),
@@ -211,10 +209,10 @@ class AuthUserProfile extends StatelessWidget {
         // Logout
         PopupMenuItem(
           child: Row(
-            children: const [
-              Icon(Icons.logout, size: 20, color: Colors.red),
-              SizedBox(width: 12),
-              Text('Logout', style: TextStyle(color: Colors.red)),
+            children: [
+              Icon(Icons.logout, size: 20, color: AppColors.error),
+              const SizedBox(width: 12),
+              Text('Logout', style: TextStyle(color: AppColors.error)),
             ],
           ),
           onTap: () {
@@ -248,7 +246,7 @@ class AuthUserProfile extends StatelessWidget {
             },
             child: const Text(
               'Logout',
-              style: TextStyle(color: Colors.red),
+              style: TextStyle(color: AppColors.error),
             ),
           ),
         ],

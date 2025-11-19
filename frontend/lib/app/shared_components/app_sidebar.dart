@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../constans/app_constants.dart';
+import '../config/themes/app_theme.dart';
 import 'auth_user_profile.dart';
 import 'selection_button.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
@@ -12,6 +13,7 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
+      color: AppColors.primaryDark, // Dark blue background
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -94,18 +96,21 @@ class AppSidebar extends StatelessWidget {
               },
             ),
           ),
-          const Divider(
+          Divider(
             indent: 20,
             thickness: 1,
             endIndent: 20,
             height: 60,
+            color: AppColors.primaryLight.withValues(alpha: 0.3), // Lighter divider for dark background
           ),
           const SizedBox(height: kSpacing),
           Padding(
             padding: const EdgeInsets.all(kSpacing),
             child: Text(
               "2025 Monitor license",
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textLight, // Light text on dark background
+              ),
             ),
           ),
         ],

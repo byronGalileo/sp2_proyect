@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
@@ -84,11 +85,11 @@ class _LogsScreenState extends State<LogsScreen> {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.primaryDark,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -99,7 +100,7 @@ class _LogsScreenState extends State<LogsScreen> {
             const DrawerMenuButton(),
             const SizedBox(width: 8),
           ],
-          const Icon(EvaIcons.fileText, size: 24),
+          const Icon(EvaIcons.fileText, size: 24, color: AppColors.accentOrange),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -107,13 +108,16 @@ class _LogsScreenState extends State<LogsScreen> {
               children: [
                 Text(
                   'Service Logs',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.textOnPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 Obx(() {
                   if (controller.allLogs.isNotEmpty) {
                     return Text(
                       '${controller.allLogs.length} logs loaded',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
                     );
                   }
                   return const SizedBox.shrink();
@@ -127,8 +131,8 @@ class _LogsScreenState extends State<LogsScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh)),
+                      )
+                    : const Icon(Icons.refresh, color: AppColors.textOnPrimary)),
             onPressed: controller.isLoading.value ? null : controller.refresh,
             tooltip: 'Refresh',
           ),
@@ -142,73 +146,84 @@ class _LogsScreenState extends State<LogsScreen> {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
-        ),
+        color: AppColors.primaryDark.withOpacity(0.5),
       ),
-      child: isCompact
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildServiceFilter(controller),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: _buildLogLevelFilter(controller)),
-                    const SizedBox(width: 8),
-                    Expanded(child: _buildTimeRangeFilter(controller)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(child: _buildLimitFilter(controller)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: controller.clearFilters,
-                        icon: const Icon(Icons.clear, size: 18),
-                        label: const Text('Clear'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey[300],
-                          foregroundColor: Colors.black87,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          inputDecorationTheme:
+              Theme.of(context).inputDecorationTheme.copyWith(
+                    labelStyle: const TextStyle(color: AppColors.textLight),
+                    prefixIconColor: AppColors.textLight,
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(
+                          color: AppColors.accentOrange, width: 2),
+                    ),
+                  ),
+        ),
+        child: isCompact
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildServiceFilter(controller),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: _buildLogLevelFilter(controller)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildTimeRangeFilter(controller)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(child: _buildLimitFilter(controller)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: controller.clearFilters,
+                          icon: const Icon(Icons.clear, size: 18),
+                          label: const Text('Clear'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.border,
+                            foregroundColor: AppColors.textSecondary,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            )
-          : Row(
-              children: [
-                Expanded(flex: 2, child: _buildServiceFilter(controller)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildLogLevelFilter(controller)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildTimeRangeFilter(controller)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildLimitFilter(controller)),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: controller.clearFilters,
-                  icon: const Icon(Icons.clear, size: 18),
-                  label: const Text('Clear Filters'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[300],
-                    foregroundColor: Colors.black87,
+                    ],
                   ),
-                ),
-              ],
-            ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(flex: 2, child: _buildServiceFilter(controller)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildLogLevelFilter(controller)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTimeRangeFilter(controller)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildLimitFilter(controller)),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: controller.clearFilters,
+                    icon: const Icon(Icons.clear, size: 18),
+                    label: const Text('Clear Filters'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.border,
+                      foregroundColor: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
   Widget _buildServiceFilter(LogsController controller) {
     return Obx(() => DropdownButtonFormField<String>(
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           value: controller.selectedServiceId.value.isEmpty
               ? null
               : controller.selectedServiceId.value,
@@ -221,12 +236,12 @@ class _LogsScreenState extends State<LogsScreen> {
           items: [
             const DropdownMenuItem<String>(
               value: '',
-              child: Text('All Services'),
+              child: Text('All Services', style: TextStyle(color: AppColors.textOnPrimary)),
             ),
             ...controller.availableServices.map((service) {
               return DropdownMenuItem<String>(
                 value: service.serviceId,
-                child: Text(service.displayName ?? service.serviceName),
+                child: Text(service.displayName ?? service.serviceName, style: const TextStyle(color: AppColors.textOnPrimary)),
               );
             }),
           ],
@@ -245,6 +260,9 @@ class _LogsScreenState extends State<LogsScreen> {
 
   Widget _buildLogLevelFilter(LogsController controller) {
     return Obx(() => DropdownButtonFormField<String>(
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           value: controller.selectedLogLevel.value,
           decoration: const InputDecoration(
             labelText: 'Level',
@@ -255,7 +273,7 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.logLevels.map((level) {
             return DropdownMenuItem<String>(
               value: level,
-              child: Text(level),
+              child: Text(level, style: const TextStyle(color: AppColors.textOnPrimary)),
             );
           }).toList(),
           onChanged: (value) {
@@ -268,6 +286,9 @@ class _LogsScreenState extends State<LogsScreen> {
 
   Widget _buildTimeRangeFilter(LogsController controller) {
     return Obx(() => DropdownButtonFormField<int>(
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           value: controller.selectedHours.value,
           decoration: const InputDecoration(
             labelText: 'Time Range',
@@ -278,7 +299,7 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.timeRanges.map((hours) {
             return DropdownMenuItem<int>(
               value: hours,
-              child: Text(controller.getTimeRangeLabel(hours)),
+              child: Text(controller.getTimeRangeLabel(hours), style: const TextStyle(color: AppColors.textOnPrimary)),
             );
           }).toList(),
           onChanged: (value) {
@@ -291,6 +312,9 @@ class _LogsScreenState extends State<LogsScreen> {
 
   Widget _buildLimitFilter(LogsController controller) {
     return Obx(() => DropdownButtonFormField<int>(
+          dropdownColor: AppColors.primaryDark,
+          style: const TextStyle(color: AppColors.textOnPrimary),
+          iconEnabledColor: AppColors.textLight,
           value: controller.selectedLimit.value,
           decoration: const InputDecoration(
             labelText: 'Fetch Limit',
@@ -301,7 +325,7 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.limitOptions.map((limit) {
             return DropdownMenuItem<int>(
               value: limit,
-              child: Text('$limit logs'),
+              child: Text('$limit logs', style: const TextStyle(color: AppColors.textOnPrimary)),
             );
           }).toList(),
           onChanged: (value) {
@@ -327,13 +351,13 @@ class _LogsScreenState extends State<LogsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(EvaIcons.inbox, size: 64, color: Colors.grey[400]),
+              const Icon(EvaIcons.inbox, size: 64, color: AppColors.textLight),
               const SizedBox(height: 16),
               Text(
                 'No logs found',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.grey[600],
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -341,7 +365,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 'Try adjusting your filters',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[500],
+                  color: AppColors.textLight.withOpacity(0.8),
                 ),
               ),
             ],
@@ -358,11 +382,11 @@ class _LogsScreenState extends State<LogsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(EvaIcons.alertCircle, size: 64, color: Colors.red),
+          const Icon(EvaIcons.alertCircle, size: 64, color: AppColors.error),
           const SizedBox(height: 16),
           Text(
             'Error loading logs',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textOnPrimary),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -370,7 +394,7 @@ class _LogsScreenState extends State<LogsScreen> {
             child: Text(
               controller.errorMessage.value,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
             ),
           ),
           const SizedBox(height: 16),
@@ -416,7 +440,7 @@ class _LogsScreenState extends State<LogsScreen> {
                   DataCell(
                     Text(
                       log.serviceName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ),
                   DataCell(Text(log.host ?? 'N/A')),
@@ -436,21 +460,25 @@ class _LogsScreenState extends State<LogsScreen> {
                   DataCell(
                     log.serviceType != null && log.serviceType != 'unknown'
                         ? Chip(
+                            backgroundColor: AppColors.primaryBase.withOpacity(0.1),
                             label: Text(
                               log.serviceType!,
-                              style: const TextStyle(fontSize: 10),
+                              style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
                             ),
                             visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           )
                         : const Text('Unknown'),
                   ),
                   DataCell(
-                    Icon(
-                      log.sentToUser ? Icons.check_circle : Icons.pending,
-                      size: 20,
-                      color: log.sentToUser ? Colors.green : Colors.orange,
+                    Tooltip(
+                      message: log.sentToUser ? 'Sent to user' : 'Not sent',
+                      child: Icon(
+                        log.sentToUser ? EvaIcons.checkmarkCircle2 : EvaIcons.clockOutline,
+                        size: 20,
+                        color: log.sentToUser ? AppColors.success : AppColors.warning,
+                      ),
                     ),
                   ),
                 ],
@@ -486,7 +514,7 @@ class _LogsScreenState extends State<LogsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -503,15 +531,15 @@ class _LogsScreenState extends State<LogsScreen> {
   Color _getLevelColor(String level) {
     switch (level.toUpperCase()) {
       case 'ERROR':
-        return Colors.red;
+        return AppColors.error;
       case 'WARNING':
-        return Colors.orange;
+        return AppColors.warning;
       case 'INFO':
-        return Colors.blue;
+        return AppColors.info;
       case 'DEBUG':
-        return Colors.green;
+        return AppColors.success;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 
@@ -522,58 +550,61 @@ class _LogsScreenState extends State<LogsScreen> {
       return Container(
         padding: const EdgeInsets.all(AppConfig.padding),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).dividerColor,
-            ),
-          ),
+          color: AppColors.primaryDark.withOpacity(0.5),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Page size selector
-            Row(
-              children: [
-                const Text('Rows per page:'),
-                const SizedBox(width: 8),
-                DropdownButton<int>(
-                  value: controller.pageSize.value,
-                  underline: const SizedBox(),
-                  items: controller.pageSizeOptions.map((size) {
-                    return DropdownMenuItem<int>(
-                      value: size,
-                      child: Text('$size'),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      controller.changePageSize(value);
-                    }
-                  },
-                ),
-              ],
-            ),
-            // Page info and navigation
-            Row(
-              children: [
-                Text(
-                  'Page ${controller.currentPageNumber} of ${controller.totalPages}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(width: 16),
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed:
-                      controller.hasPrevious ? controller.loadPreviousPage : null,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: controller.hasMore ? controller.loadNextPage : null,
-                ),
-              ],
-            ),
-          ],
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.apply(bodyColor: AppColors.textLight, displayColor: AppColors.textLight),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Page size selector
+              Row(
+                children: [
+                  const Text('Rows per page:'),
+                  const SizedBox(width: 8),
+                  DropdownButton<int>(
+                    value: controller.pageSize.value,
+                    dropdownColor: AppColors.primaryDark,
+                    style: const TextStyle(color: AppColors.textOnPrimary),
+                    iconEnabledColor: AppColors.textLight,
+                    underline: const SizedBox(),
+                    items: controller.pageSizeOptions.map((size) {
+                      return DropdownMenuItem<int>(
+                        value: size,
+                        child: Text('$size', style: const TextStyle(color: AppColors.textOnPrimary)),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        controller.changePageSize(value);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              // Page info and navigation
+              Row(
+                children: [
+                  Text(
+                    'Page ${controller.currentPageNumber} of ${controller.totalPages}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, color: AppColors.textLight),
+                    onPressed:
+                        controller.hasPrevious ? controller.loadPreviousPage : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right, color: AppColors.textLight),
+                    onPressed: controller.hasMore ? controller.loadNextPage : null,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       );
     });

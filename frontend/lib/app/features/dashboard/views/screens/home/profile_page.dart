@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../../../config/app_config.dart';
+import '../../../../../config/themes/app_theme.dart';
 import '../../../../auth/controllers/auth_controller.dart';
 import '../../../../../models/user.dart';
+import '../../../../../shared_components/base_screen_wrapper.dart';
 import '../../../../../shared_components/responsive_builder.dart';
 
 class ProfilePage extends StatelessWidget {
@@ -355,7 +357,7 @@ class ProfilePage extends StatelessWidget {
                 'Roles',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                      color: AppColors.primaryDark,
                     ),
               ),
               const SizedBox(height: 8),
@@ -367,7 +369,7 @@ class ProfilePage extends StatelessWidget {
                     label: Text(role),
                     backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                     labelStyle: TextStyle(
-                      color: Theme.of(context).primaryColor,
+                      color: AppColors.textOnPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   );

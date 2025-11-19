@@ -1,6 +1,6 @@
 import 'package:daily_task/app/constans/app_constants.dart';
+import 'package:daily_task/app/config/themes/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class SelectionButtonData {
   final IconData activeIcon;
@@ -118,7 +118,7 @@ class _Button extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color:
-          (!selected) ? null : Theme.of(context).primaryColor.withOpacity(.1),
+          (!selected) ? Colors.transparent : AppColors.primaryBase.withValues(alpha: 0.15),
       borderRadius: BorderRadius.circular(kBorderRadius),
       child: InkWell(
         onTap: onPressed,
@@ -141,7 +141,7 @@ class _Button extends StatelessWidget {
                   size: 20,
                   color: (!selected)
                       ? kFontColorPallets[1]
-                      : Theme.of(Get.context!).primaryColor,
+                      : AppColors.accentOrange,
                 ),
             ],
           ),
@@ -156,7 +156,7 @@ class _Button extends StatelessWidget {
       size: 20,
       color: (!selected)
           ? kFontColorPallets[1]
-          : Theme.of(Get.context!).primaryColor,
+          : AppColors.accentOrange,
     );
   }
 
@@ -166,7 +166,7 @@ class _Button extends StatelessWidget {
       style: TextStyle(
         color: (!selected)
             ? kFontColorPallets[1]
-            : Theme.of(Get.context!).primaryColor,
+            : Colors.white,
         fontWeight: FontWeight.bold,
         letterSpacing: .8,
         fontSize: 14,

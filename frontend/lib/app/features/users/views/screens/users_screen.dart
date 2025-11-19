@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../models/user.dart';
@@ -154,11 +155,11 @@ class UsersScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.primaryDark,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -166,26 +167,41 @@ class UsersScreen extends StatelessWidget {
       child: Row(
         children: [
           if (showMenuButton) ...[
-            const DrawerMenuButton(),
+            const DrawerMenuButton(), // Assuming this is already themed white
             const SizedBox(width: 8),
           ],
-          const Icon(EvaIcons.people, size: 24),
+          const Icon(EvaIcons.people, size: 24, color: AppColors.accentOrange),
           const SizedBox(width: 12),
-          Text(
-            'User Management',
-            style: Theme.of(context).textTheme.titleLarge,
+          Expanded(
+            child: Text(
+              'User Management',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textOnPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const Spacer(),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Obx(() => controller.isLoading.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh, color: AppColors.textOnPrimary)),
             onPressed: controller.refresh,
             tooltip: 'Refresh',
           ),
           const SizedBox(width: 8),
           ElevatedButton.icon(
             onPressed: () => _showUserDialog(context),
-            icon: const Icon(Icons.add, size: 18),
+            icon: const Icon(Icons.add, size: 18, color: AppColors.textOnPrimary),
             label: const Text('Add User'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryBase,
+              foregroundColor: AppColors.textOnPrimary,
+            ),
           ),
         ],
       ),
@@ -196,40 +212,53 @@ class UsersScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-          ),
-        ),
+        color: AppColors.primaryDark.withOpacity(0.5),
       ),
       child: Row(
         children: [
-          const Icon(EvaIcons.funnelOutline, size: 18),
+          const Icon(EvaIcons.funnelOutline, size: 18, color: AppColors.textLight),
           const SizedBox(width: 8),
-          const Text('Filter:'),
+          const Text('Filter:', style: TextStyle(color: AppColors.textLight)),
           const SizedBox(width: 12),
           Obx(() => FilterChip(
                 label: const Text('All'),
                 selected: controller.filterIsActive.value == null,
                 onSelected: (_) => controller.toggleActiveFilter(null),
+                selectedColor: AppColors.primaryBase,
+                backgroundColor: AppColors.border,
+                labelStyle: TextStyle(
+                    color: controller.filterIsActive.value == null
+                        ? AppColors.textOnPrimary
+                        : AppColors.textSecondary),
               )),
           const SizedBox(width: 8),
           Obx(() => FilterChip(
                 label: const Text('Active'),
                 selected: controller.filterIsActive.value == true,
                 onSelected: (_) => controller.toggleActiveFilter(true),
+                selectedColor: AppColors.success,
+                backgroundColor: AppColors.border,
+                labelStyle: TextStyle(
+                    color: controller.filterIsActive.value == true
+                        ? AppColors.textOnPrimary
+                        : AppColors.textSecondary),
               )),
           const SizedBox(width: 8),
           Obx(() => FilterChip(
                 label: const Text('Inactive'),
                 selected: controller.filterIsActive.value == false,
                 onSelected: (_) => controller.toggleActiveFilter(false),
+                selectedColor: AppColors.error,
+                backgroundColor: AppColors.border,
+                labelStyle: TextStyle(
+                    color: controller.filterIsActive.value == false
+                        ? AppColors.textOnPrimary
+                        : AppColors.textSecondary),
               )),
           const Spacer(),
           Obx(() => Text(
                 '${controller.totalUsers.value} users',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
               )),
         ],
       ),
@@ -243,30 +272,28 @@ class UsersScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(AppConfig.padding),
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).dividerColor,
-            ),
-          ),
+          color: AppColors.primaryDark.withOpacity(0.5),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Page ${controller.currentPageNumber} of ${controller.totalPages}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.textLight),
             ),
             Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, color: AppColors.textLight),
                   onPressed: controller.hasPrevious
                       ? controller.loadPreviousPage
                       : null,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, color: AppColors.textLight),
                   onPressed:
                       controller.hasMore ? controller.loadNextPage : null,
                 ),
