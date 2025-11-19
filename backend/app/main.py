@@ -29,7 +29,7 @@ app = FastAPI(
 # CORS middleware for Flutter app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=["*"],  # Allow all origins for development (change to settings.ALLOWED_ORIGINS for production)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

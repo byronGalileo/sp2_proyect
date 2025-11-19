@@ -1,6 +1,7 @@
 import 'package:daily_task/app/utils/helpers/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart'; // agregado
 import '../../../../../config/app_config.dart';
 import '../../../../../config/routes/app_pages.dart';
 import '../../../../../shared_components/responsive_builder.dart';
@@ -60,6 +61,39 @@ class _LoginScreenState extends State<LoginScreen> {
       final errorMsg = authController.errorMessage ?? 'Login failed';
       SnackbarHelper.showSuccess(message: errorMsg);
     }
+  }
+
+  // Agregado: widget para mostrar el logo
+  Widget _buildLogo() {
+    const double logoSize = 300;
+    // En web, el directorio `web/` es servido en la raíz — usar /icons/BoneGuard.png
+    if (kIsWeb) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Image.network(
+            '/icons/BoneGuard.png',
+            width: logoSize,
+            height: logoSize,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+    }
+
+    // En mobile/otros, usar asset si lo agregas a pubspec.yaml en assets/images/BoneGuard.png
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
+        child: Image.asset(
+          'assets/images/BoneGuard.png',
+          width: logoSize,
+          height: logoSize,
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
   }
 
   @override
@@ -145,10 +179,8 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AuthHeader(
-            title: 'Welcome Back',
-            subtitle: 'Sign in to your account',
-          ),
+          // Agregado: logo arriba del header
+          _buildLogo(),
           const SizedBox(height: 32),
 
           CustomTextField(
