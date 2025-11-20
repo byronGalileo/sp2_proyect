@@ -5,6 +5,7 @@ import '../../../../config/app_config.dart';
 import '../../../../config/themes/app_theme.dart';
 import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
+import 'host_services_monitoring_dialog.dart';
 
 class HostCard extends StatelessWidget {
   final Host host;
@@ -61,6 +62,17 @@ class HostCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(EvaIcons.barChart2, size: 18),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => HostServicesMonitoringDialog(host: host),
+                    );
+                  },
+                  tooltip: 'View Monitoring',
+                  color: AppColors.accentOrange,
                 ),
                 IconButton(
                   icon: const Icon(EvaIcons.activity, size: 18),

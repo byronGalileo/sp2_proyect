@@ -17,9 +17,10 @@ Log _$LogFromJson(Map<String, dynamic> json) => Log(
   metadata: json['metadata'] as Map<String, dynamic>?,
   tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
   sentToUser: json['sent_to_user'] as bool,
-  date: json['date'] as String,
-  hour: (json['hour'] as num).toInt(),
-  serviceKey: json['service_key'] as String,
+  status: json['status'] as String?,
+  date: json['date'] as String?,
+  hour: (json['hour'] as num?)?.toInt(),
+  serviceKey: json['service_key'] as String?,
 );
 
 Map<String, dynamic> _$LogToJson(Log instance) => <String, dynamic>{
@@ -33,6 +34,7 @@ Map<String, dynamic> _$LogToJson(Log instance) => <String, dynamic>{
   'metadata': instance.metadata,
   'tags': instance.tags,
   'sent_to_user': instance.sentToUser,
+  'status': instance.status,
   'date': instance.date,
   'hour': instance.hour,
   'service_key': instance.serviceKey,
@@ -56,8 +58,8 @@ Map<String, dynamic> _$LogsResponseToJson(LogsResponse instance) =>
 LogFilters _$LogFiltersFromJson(Map<String, dynamic> json) => LogFilters(
   serviceName: json['service_name'] as String?,
   logLevel: json['log_level'] as String?,
-  hours: (json['hours'] as num).toInt(),
-  limit: (json['limit'] as num).toInt(),
+  hours: (json['hours'] as num?)?.toInt(),
+  limit: (json['limit'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$LogFiltersToJson(LogFilters instance) =>

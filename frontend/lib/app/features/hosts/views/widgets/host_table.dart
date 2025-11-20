@@ -6,6 +6,7 @@ import '../../../../config/app_config.dart';
 import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
 import '../../../managed_services/controllers/managed_services_controller.dart';
+import 'host_services_monitoring_dialog.dart';
 
 class HostTable extends StatelessWidget {
   final List<Host> hosts;
@@ -220,6 +221,20 @@ class HostTable extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        icon: const Icon(EvaIcons.barChart2, size: 16),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => HostServicesMonitoringDialog(host: host),
+                          );
+                        },
+                        tooltip: 'View Monitoring',
+                        color: AppColors.accentOrange,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(EvaIcons.activity, size: 16),
                         onPressed: onViewServices != null

@@ -34,14 +34,17 @@ class Log {
   @JsonKey(name: 'sent_to_user')
   final bool sentToUser;
 
+  @JsonKey(name: 'status')
+  final String? status;
+
   @JsonKey(name: 'date')
-  final String date;
+  final String? date;
 
   @JsonKey(name: 'hour')
-  final int hour;
+  final int? hour;
 
   @JsonKey(name: 'service_key')
-  final String serviceKey;
+  final String? serviceKey;
 
   Log({
     required this.id,
@@ -54,9 +57,10 @@ class Log {
     this.metadata,
     this.tags,
     required this.sentToUser,
-    required this.date,
-    required this.hour,
-    required this.serviceKey,
+    this.status,
+    this.date,
+    this.hour,
+    this.serviceKey,
   });
 
   factory Log.fromJson(Map<String, dynamic> json) => _$LogFromJson(json);
@@ -93,16 +97,16 @@ class LogFilters {
   final String? logLevel;
 
   @JsonKey(name: 'hours')
-  final int hours;
+  final int? hours;
 
   @JsonKey(name: 'limit')
-  final int limit;
+  final int? limit;
 
   LogFilters({
     this.serviceName,
     this.logLevel,
-    required this.hours,
-    required this.limit,
+    this.hours,
+    this.limit,
   });
 
   factory LogFilters.fromJson(Map<String, dynamic> json) => _$LogFiltersFromJson(json);

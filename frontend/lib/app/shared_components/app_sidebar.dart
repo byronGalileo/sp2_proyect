@@ -103,6 +103,15 @@ class AppSidebar extends StatelessWidget {
             height: 60,
             color: AppColors.primaryLight.withValues(alpha: 0.3), // Lighter divider for dark background
           ),
+          const SizedBox(height: 10),
+          Center(
+            child: Image.network(
+              '/icons/LogoGuard.png', // Ruta para web
+              width: 300, // Ajusta el tamaño según sea necesario
+              height: 300,
+              errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+            ),
+          ),
           const SizedBox(height: kSpacing),
           Padding(
             padding: const EdgeInsets.all(kSpacing),
