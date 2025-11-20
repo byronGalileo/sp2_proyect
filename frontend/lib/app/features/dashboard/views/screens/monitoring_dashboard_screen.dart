@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
@@ -37,25 +38,28 @@ class MonitoringDashboardScreen extends StatelessWidget {
       children: [
         _buildHeader(context, controller, showMenuButton: true),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConfig.padding),
-            child: Column(
-              children: [
-                Obx(() {
-                  if (controller.isLoading.value) {
-                    return const LoadingWidget();
-                  }
-                  return Column(
-                    children: [
-                      _buildStatCards(context, controller),
-                      const SizedBox(height: 24),
-                      _buildTimePeriodSelector(context, controller),
-                      const SizedBox(height: 16),
-                      _buildLogsChart(context, controller),
-                    ],
-                  );
-                }),
-              ],
+          child: Container(
+            color: AppColors.background,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConfig.padding),
+              child: Column(
+                children: [
+                  Obx(() {
+                    if (controller.isLoading.value) {
+                      return const LoadingWidget();
+                    }
+                    return Column(
+                      children: [
+                        _buildStatCards(context, controller),
+                        const SizedBox(height: 24),
+                        _buildTimePeriodSelector(context, controller),
+                        const SizedBox(height: 16),
+                        _buildLogsChart(context, controller),
+                      ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         ),
@@ -69,25 +73,28 @@ class MonitoringDashboardScreen extends StatelessWidget {
       children: [
         _buildHeader(context, controller),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConfig.padding * 2),
-            child: Column(
-              children: [
-                Obx(() {
-                  if (controller.isLoading.value) {
-                    return const LoadingWidget();
-                  }
-                  return Column(
-                    children: [
-                      _buildStatCards(context, controller),
-                      const SizedBox(height: 32),
-                      _buildTimePeriodSelector(context, controller),
-                      const SizedBox(height: 16),
-                      _buildLogsChart(context, controller),
-                    ],
-                  );
-                }),
-              ],
+          child: Container(
+            color: AppColors.background,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConfig.padding * 2),
+              child: Column(
+                children: [
+                  Obx(() {
+                    if (controller.isLoading.value) {
+                      return const LoadingWidget();
+                    }
+                    return Column(
+                      children: [
+                        _buildStatCards(context, controller),
+                        const SizedBox(height: 32),
+                        _buildTimePeriodSelector(context, controller),
+                        const SizedBox(height: 16),
+                        _buildLogsChart(context, controller),
+                      ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         ),
@@ -101,25 +108,28 @@ class MonitoringDashboardScreen extends StatelessWidget {
       children: [
         _buildHeader(context, controller),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConfig.padding * 3),
-            child: Column(
-              children: [
-                Obx(() {
-                  if (controller.isLoading.value) {
-                    return const LoadingWidget();
-                  }
-                  return Column(
-                    children: [
-                      _buildStatCards(context, controller),
-                      const SizedBox(height: 40),
-                      _buildTimePeriodSelector(context, controller),
-                      const SizedBox(height: 16),
-                      _buildLogsChart(context, controller),
-                    ],
-                  );
-                }),
-              ],
+          child: Container(
+            color: AppColors.background,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppConfig.padding * 3),
+              child: Column(
+                children: [
+                  Obx(() {
+                    if (controller.isLoading.value) {
+                      return const LoadingWidget();
+                    }
+                    return Column(
+                      children: [
+                        _buildStatCards(context, controller),
+                        const SizedBox(height: 40),
+                        _buildTimePeriodSelector(context, controller),
+                        const SizedBox(height: 16),
+                        _buildLogsChart(context, controller),
+                      ],
+                    );
+                  }),
+                ],
+              ),
             ),
           ),
         ),
@@ -135,11 +145,11 @@ class MonitoringDashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: AppColors.primaryDark,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 4,
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -150,21 +160,27 @@ class MonitoringDashboardScreen extends StatelessWidget {
             const DrawerMenuButton(),
             const SizedBox(width: 8),
           ],
-          const Icon(EvaIcons.activity, size: 24),
+          Icon(EvaIcons.activity, size: 24, color: AppColors.accentOrange),
           const SizedBox(width: 12),
           Text(
             'Monitoring Dashboard',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.textOnPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const Spacer(),
           IconButton(
             icon: Obx(() => controller.isLoading.value
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.accentOrange),
+                    ),
                   )
-                : const Icon(Icons.refresh)),
+                : const Icon(Icons.refresh, color: AppColors.textOnPrimary)),
             onPressed:
                 controller.isLoading.value ? null : controller.refresh,
             tooltip: 'Refresh',
@@ -190,7 +206,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                       title: 'Active Hosts',
                       value: controller.activeHostsCount.value,
                       icon: EvaIcons.hardDrive,
-                      color: Colors.green,
+                      color: AppColors.success,
                       isLoading: controller.isLoading.value,
                     )),
               ),
@@ -200,7 +216,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                       title: 'Inactive Hosts',
                       value: controller.inactiveHostsCount.value,
                       icon: EvaIcons.hardDriveOutline,
-                      color: Colors.orange,
+                      color: AppColors.warning,
                       isLoading: controller.isLoading.value,
                     )),
               ),
@@ -210,7 +226,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                       title: 'Inactive Services',
                       value: controller.inactiveServicesCount.value,
                       icon: EvaIcons.alertTriangle,
-                      color: Colors.red,
+                      color: AppColors.error,
                       isLoading: controller.isLoading.value,
                     )),
               ),
@@ -224,7 +240,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                     title: 'Active Hosts',
                     value: controller.activeHostsCount.value,
                     icon: EvaIcons.hardDrive,
-                    color: Colors.green,
+                    color: AppColors.success,
                     isLoading: controller.isLoading.value,
                   )),
               const SizedBox(height: 16),
@@ -232,7 +248,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                     title: 'Inactive Hosts',
                     value: controller.inactiveHostsCount.value,
                     icon: EvaIcons.hardDriveOutline,
-                    color: Colors.orange,
+                    color: AppColors.warning,
                     isLoading: controller.isLoading.value,
                   )),
               const SizedBox(height: 16),
@@ -240,7 +256,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                     title: 'Inactive Services',
                     value: controller.inactiveServicesCount.value,
                     icon: EvaIcons.alertTriangle,
-                    color: Colors.red,
+                    color: AppColors.error,
                     isLoading: controller.isLoading.value,
                   )),
             ],
@@ -256,7 +272,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                           title: 'Active Hosts',
                           value: controller.activeHostsCount.value,
                           icon: EvaIcons.hardDrive,
-                          color: Colors.green,
+                          color: AppColors.success,
                           isLoading: controller.isLoading.value,
                         )),
                   ),
@@ -266,7 +282,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                           title: 'Inactive Hosts',
                           value: controller.inactiveHostsCount.value,
                           icon: EvaIcons.hardDriveOutline,
-                          color: Colors.orange,
+                          color: AppColors.warning,
                           isLoading: controller.isLoading.value,
                         )),
                   ),
@@ -277,7 +293,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                     title: 'Inactive Services',
                     value: controller.inactiveServicesCount.value,
                     icon: EvaIcons.alertTriangle,
-                    color: Colors.red,
+                    color: AppColors.error,
                     isLoading: controller.isLoading.value,
                   )),
             ],
@@ -299,12 +315,13 @@ class MonitoringDashboardScreen extends StatelessWidget {
           padding: const EdgeInsets.all(AppConfig.padding),
           child: Row(
             children: [
-              const Icon(EvaIcons.clockOutline, size: 20),
+              Icon(EvaIcons.clockOutline, size: 20, color: AppColors.primaryBase),
               const SizedBox(width: 12),
               Text(
                 'Time Period:',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
               ),
               const SizedBox(width: 16),
@@ -369,9 +386,14 @@ class MonitoringDashboardScreen extends StatelessWidget {
           controller.changeTimePeriod(hours);
         }
       },
-      selectedColor: Theme.of(context).primaryColor,
+      selectedColor: AppColors.primaryBase,
+      backgroundColor: AppColors.surface,
+      side: BorderSide(
+        color: isSelected ? AppColors.primaryBase : AppColors.border,
+        width: isSelected ? 2 : 1,
+      ),
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
+        color: isSelected ? Colors.white : AppColors.textPrimary,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:daily_task/app/utils/helpers/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../../config/themes/app_theme.dart';
 import 'package:flutter/foundation.dart'; // agregado
 import '../../../../../config/app_config.dart';
 import '../../../../../config/routes/app_pages.dart';
@@ -59,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final errorMsg = authController.errorMessage ?? 'Login failed';
-      SnackbarHelper.showSuccess(message: errorMsg);
+      SnackbarHelper.showError(message: errorMsg);
     }
   }
 
@@ -95,6 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -173,76 +175,96 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildForm(AuthController authController) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Agregado: logo arriba del header
-          _buildLogo(),
-          const SizedBox(height: 32),
-
-          CustomTextField(
-            controller: _usernameController,
-            label: 'Username or Email',
-            prefixIcon: Icons.person_outline,
-            validator: (value) => Validators.required(value, 'Username'),
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-
-          CustomTextField(
-            controller: _passwordController,
-            label: 'Password',
-            prefixIcon: Icons.lock_outline,
-            obscureText: _obscurePassword,
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword
-                  ? Icons.visibility_off
-                  : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _obscurePassword = !_obscurePassword;
-                });
-              },
+    // Apply a theme with light text colors for the form elements
+    return Theme(
+      data: Theme.of(context).copyWith(
+        inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
+              // Style for the label when it's floating
+              labelStyle: const TextStyle(color: AppColors.textLight),
+              // Style for the hint text
+              hintStyle: const TextStyle(color: AppColors.textLight),
+              prefixIconColor: AppColors.textLight,
+              suffixIconColor: AppColors.textLight,
             ),
-            validator: (value) => Validators.required(value, 'Password'),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => _login(),
-          ),
-
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                // TODO: Implement forgot password
-                SnackbarHelper.showWarning(message: 'Forgot password feature coming soon');
-              },
-              child: const Text('Forgot Password?'),
+        // This will style the text inside the text fields
+        textSelectionTheme: const TextSelectionThemeData(
+          cursorColor: AppColors.accentOrange,
+        ),
+        primaryColor: AppColors.primaryLighter,
+        textTheme: Theme.of(context).textTheme.copyWith(
+              titleMedium: const TextStyle(color: AppColors.textOnPrimary), // Input text style
+              bodyMedium: const TextStyle(color: AppColors.textOnPrimary), // Fallback for other text
             ),
-          ),
-
-          const SizedBox(height: 24),
-          CustomButton(
-            text: 'Sign In',
-            onPressed: _login,
-            isLoading: authController.isLoading,
-          ),
-
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text("Don't have an account? "),
-              TextButton(
-                onPressed: () => Get.toNamed(Routes.register),
-                child: const Text('Sign Up'),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: AppColors.primaryLighter),
+        ),
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLogo(), // Solo se muestra el logo
+            const SizedBox(height: 32),
+            CustomTextField(
+              controller: _usernameController,
+              label: 'Username or Email',
+              prefixIcon: Icons.person_outline,
+              validator: (value) => Validators.required(value, 'Username'),
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _passwordController,
+              label: 'Password',
+              prefixIcon: Icons.lock_outline,
+              obscureText: _obscurePassword,
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword
+                    ? Icons.visibility_off
+                    : Icons.visibility),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
               ),
-            ],
-          ),
-        ],
+              validator: (value) => Validators.required(value, 'Password'),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _login(),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  // TODO: Implement forgot password
+                  SnackbarHelper.showWarning(
+                      message: 'Forgot password feature coming soon');
+                },
+                child: const Text('Forgot Password?'),
+              ),
+            ),
+            const SizedBox(height: 24),
+            CustomButton(
+              text: 'Sign In',
+              onPressed: _login,
+              isLoading: authController.isLoading,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Don't have an account? "),
+                TextButton(
+                  onPressed: () => Get.toNamed(Routes.register),
+                  child: const Text('Sign Up'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

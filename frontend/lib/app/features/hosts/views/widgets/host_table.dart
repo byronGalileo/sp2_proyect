@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:get/get.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../config/app_config.dart';
 import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
 import '../../../managed_services/controllers/managed_services_controller.dart';
+import 'host_services_monitoring_dialog.dart';
 
 class HostTable extends StatelessWidget {
   final List<Host> hosts;
@@ -33,16 +35,28 @@ class HostTable extends StatelessWidget {
     final controller = Get.find<HostsController>();
 
     return Card(
-      elevation: 2,
+      color: Theme.of(context).cardColor,
+      elevation: 1,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+        side: BorderSide(color: AppColors.border.withOpacity(0.5)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
+          headingTextStyle: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(
+                  fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           headingRowColor: WidgetStateProperty.all(
-            Theme.of(context).primaryColor.withValues(alpha: 0.1),
+            Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
           ),
+          dataTextStyle:
+              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
           columns: const [
             DataColumn(label: Text('Status')),
             DataColumn(label: Text('Host ID')),
@@ -83,7 +97,7 @@ class HostTable extends StatelessWidget {
                                 ? () => onStopExecution!(host)
                                 : null,
                             tooltip: 'Stop Monitoring',
-                            color: Colors.red,
+                            color: AppColors.error,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           );
@@ -95,7 +109,7 @@ class HostTable extends StatelessWidget {
                                 ? () => onStartExecution!(host)
                                 : null,
                             tooltip: 'Start Monitoring',
-                            color: Colors.teal,
+                            color: AppColors.success,
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           );
@@ -107,26 +121,25 @@ class HostTable extends StatelessWidget {
                 DataCell(
                   Text(
                     host.hostId,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                 ),
                 DataCell(Text(host.hostname)),
                 DataCell(Text(host.ipAddress)),
                 DataCell(
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .primaryColor
-                          .withValues(alpha: 0.15),
+                      color: AppColors.primaryBase.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       host.environment,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
+                        color: AppColors.primaryBase,
                       ),
                     ),
                   ),
@@ -136,29 +149,35 @@ class HostTable extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(EvaIcons.person, size: 14),
+                      const Icon(EvaIcons.person,
+                          size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 4),
                       Text('${host.sshConfig.user}:${host.sshConfig.port}'),
                     ],
                   ),
                 ),
                 DataCell(
-                  SizedBox(
-                    width: 120,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 150),
                     child: host.metadata.tags.isNotEmpty
-                        ? Wrap(
-                            spacing: 4,
-                            runSpacing: 4,
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: host.metadata.tags.take(2).map((tag) {
-                              return Chip(
-                                label: Text(
-                                  tag,
-                                  style: const TextStyle(fontSize: 9),
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 4.0),
+                                child: Chip(
+                                  backgroundColor: AppColors.primaryBase.withOpacity(0.1),
+                                  label: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: AppColors.textOnPrimary,
+                                    ),
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                                 ),
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
                               );
                             }).toList(),
                           )
@@ -168,10 +187,8 @@ class HostTable extends StatelessWidget {
                 DataCell(
                   Text(
                     _formatTimestamp(host.lastSeen),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ),
                 DataCell(
@@ -182,7 +199,7 @@ class HostTable extends StatelessWidget {
                         icon: const Icon(EvaIcons.plusCircleOutline, size: 16),
                         onPressed: () => onAddService(host),
                         tooltip: 'Add Service',
-                        color: Colors.green,
+                        color: AppColors.success,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -193,7 +210,7 @@ class HostTable extends StatelessWidget {
                             ? () => onGenerateConfig!(host)
                             : null,
                         tooltip: 'Generate Config',
-                        color: Colors.purple,
+                        color: AppColors.accentAmber,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -204,6 +221,20 @@ class HostTable extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      IconButton(
+                        icon: const Icon(EvaIcons.barChart2, size: 16),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => HostServicesMonitoringDialog(host: host),
+                          );
+                        },
+                        tooltip: 'View Monitoring',
+                        color: AppColors.accentOrange,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(EvaIcons.activity, size: 16),
                         onPressed: onViewServices != null
@@ -220,13 +251,14 @@ class HostTable extends StatelessWidget {
                                     arguments: {'hostId': host.hostId});
                               },
                         tooltip: 'View Services',
-                        color: Colors.blue,
+                        color: AppColors.info,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(EvaIcons.edit2Outline, size: 16),
+                        color: AppColors.textSecondary,
                         onPressed: () => onEdit(host),
                         tooltip: 'Edit',
                         padding: EdgeInsets.zero,
@@ -237,7 +269,7 @@ class HostTable extends StatelessWidget {
                         icon: const Icon(EvaIcons.trash2Outline, size: 16),
                         onPressed: () => onDelete(host),
                         tooltip: 'Delete',
-                        color: Colors.red,
+                        color: AppColors.error,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
@@ -255,13 +287,13 @@ class HostTable extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'active':
-        return Colors.green;
+        return AppColors.success;
       case 'inactive':
-        return Colors.grey;
+        return AppColors.textSecondary;
       case 'maintenance':
-        return Colors.orange;
+        return AppColors.warning;
       default:
-        return Colors.grey;
+        return AppColors.textSecondary;
     }
   }
 

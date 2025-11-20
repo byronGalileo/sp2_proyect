@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../config/app_config.dart';
+import '../../../../config/themes/app_theme.dart';
 import '../../../../utils/services/log_service.dart';
 import 'level_chart.dart';
 
@@ -16,10 +17,10 @@ class LogsChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final levelColors = {
-      'INFO': Colors.blue,
-      'WARNING': Colors.orange,
-      'ERROR': Colors.red,
-      'CRITICAL': Colors.purple,
+      'INFO': AppColors.info,
+      'WARNING': AppColors.warning,
+      'ERROR': AppColors.error,
+      'CRITICAL': AppColors.primaryDark,
     };
 
     return Column(
@@ -31,6 +32,7 @@ class LogsChart extends StatelessWidget {
             'Logs Over Time by Level',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: AppColors.textOnPrimary,
                 ),
           ),
         ),
