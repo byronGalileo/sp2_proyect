@@ -20,6 +20,9 @@ import 'responsive_builder.dart';
 /// )
 /// ```
 class BaseScreenWrapper extends StatefulWidget {
+  /// The title of the screen, shown in the AppBar on mobile/tablet.
+  final String? title;
+
   /// The main content of the screen
   final Widget child;
 
@@ -32,15 +35,20 @@ class BaseScreenWrapper extends StatefulWidget {
   /// Whether to show the sidebar in desktop mode (default: true)
   final bool showSidebar;
 
+  /// Whether to show the default header row in mobile/tablet mode (default: true)
+  final bool showMobileHeader;
+
   /// Custom sidebar widget (defaults to AppSidebar)
   final Widget? customSidebar;
 
   const BaseScreenWrapper({
     Key? key,
+    this.title,
     required this.child,
     this.floatingActionButton,
     this.appBarActions,
     this.showSidebar = true,
+    this.showMobileHeader = true,
     this.customSidebar,
   }) : super(key: key);
 
@@ -51,12 +59,17 @@ class BaseScreenWrapper extends StatefulWidget {
 class _BaseScreenWrapperState extends State<BaseScreenWrapper> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  /// Determines if the permanent, fixed sidebar should be shown.
+  /// This is true only on desktop layouts where the sidebar is enabled.
+  bool get shouldShowPermanentSidebar => ResponsiveBuilder.isDesktop(context) && widget.showSidebar;
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.background,
-      drawer: !ResponsiveBuilder.isDesktop(context) && widget.showSidebar
+      appBar: null, // AppBar is now handled within the body for mobile/tablet
+      drawer: !shouldShowPermanentSidebar && widget.showSidebar
           ? Drawer(
               backgroundColor: AppColors.primaryDark,
               child: SafeArea(
@@ -70,53 +83,60 @@ class _BaseScreenWrapperState extends State<BaseScreenWrapper> {
             )
           : null,
       body: SafeArea(
-        child: Container(
-          color: AppColors.background,
-          child: ResponsiveBuilder(
-            mobileBuilder: (context, constraints) {
-              return widget.child;
-            },
-            tabletBuilder: (context, constraints) {
-              if (!widget.showSidebar) {
-                return widget.child;
-              }
-              return _buildLayoutWithSidebar(context, constraints);
-            },
-            desktopBuilder: (context, constraints) {
-              if (!widget.showSidebar) {
-                return widget.child;
-              }
-              return _buildLayoutWithSidebar(context, constraints);
-            },
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Conditionally show the inline header ONLY if the permanent sidebar is hidden AND showMobileHeader is true.
+            if (!shouldShowPermanentSidebar && widget.showMobileHeader)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+                child: Row(
+                  children: [
+                    const DrawerMenuButton(),
+                    const SizedBox(width: 16),
+                    if (widget.title != null)
+                      Expanded(
+                        child: Text(
+                          widget.title!,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: AppColors.textOnPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    if (widget.appBarActions != null) ...widget.appBarActions!,
+                  ],
+                ),
+              ),
+            // Main content area
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Animated Sidebar for desktop
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    width: shouldShowPermanentSidebar ? 300 : 0,
+                    child: ClipRect(
+                      child: widget.customSidebar ??
+                          AppSidebar(
+                            onItemSelected: () =>
+                                _scaffoldKey.currentState?.closeDrawer(),
+                          ),
+                    ),
+                  ),
+                  if (shouldShowPermanentSidebar) const VerticalDivider(width: 1),
+                  // Screen's child content
+                  Expanded(child: widget.child),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: widget.floatingActionButton,
-    );
-  }
-
-  Widget _buildLayoutWithSidebar(BuildContext context, BoxConstraints constraints) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Sidebar section
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 3 : 4,
-          child: widget.customSidebar ??
-              AppSidebar(
-                onItemSelected: () {
-                  _scaffoldKey.currentState?.closeDrawer();
-                },
-              ),
-        ),
-        // Divider
-        const VerticalDivider(width: 1),
-        // Content section
-        Flexible(
-          flex: constraints.maxWidth > 1350 ? 10 : 9,
-          child: widget.child,
-        ),
-      ],
     );
   }
 
@@ -131,11 +151,20 @@ class DrawerMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResponsiveBuilder.isDesktop(context)) {
+    // Find the BaseScreenWrapper's state to check if the sidebar is visible.
+    final wrapperState = context.findAncestorStateOfType<_BaseScreenWrapperState>();
+    
+    // Calculate visibility directly to ensure it updates with MediaQuery changes in this context
+    final showSidebar = wrapperState?.widget.showSidebar ?? true;
+    final isDesktop = ResponsiveBuilder.isDesktop(context);
+    final shouldShowPermanentSidebar = isDesktop && showSidebar;
+
+    // If the permanent sidebar is visible, don't show the hamburger button.
+    if (shouldShowPermanentSidebar) {
       return const SizedBox.shrink();
     }
 
-    return IconButton(
+    return IconButton( // Otherwise, show it to allow opening the drawer.
       icon: const Icon(Icons.menu, color: AppColors.textOnPrimary),
       onPressed: () {
         Scaffold.of(context).openDrawer();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
@@ -24,8 +25,11 @@ class HostServicesMonitoringDialog extends StatefulWidget {
 }
 
 class _HostServicesMonitoringDialogState
-    extends State<HostServicesMonitoringDialog> {
+    extends State<HostServicesMonitoringDialog>
+    with SingleTickerProviderStateMixin {
   final MonitoringService _monitoringService = MonitoringService();
+
+  late AnimationController _refreshController;
 
   List<Service> _services = [];
   // Map of service name to its status history from logs
@@ -38,6 +42,10 @@ class _HostServicesMonitoringDialogState
   @override
   void initState() {
     super.initState();
+    _refreshController = AnimationController(
+      duration: const Duration(seconds: 1),
+      vsync: this,
+    );
     _loadServicesAndLogs();
     // Auto-refresh every 10 seconds for real-time updates
     _refreshTimer = Timer.periodic(
@@ -49,11 +57,15 @@ class _HostServicesMonitoringDialogState
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _refreshController.dispose();
     super.dispose();
   }
 
   Future<void> _loadServicesAndLogs() async {
     try {
+      if (!_refreshController.isAnimating) {
+        _refreshController.repeat();
+      }
       final response = await _monitoringService.getServices();
 
       // Filter services for this host
@@ -77,6 +89,11 @@ class _HostServicesMonitoringDialogState
         _errorMessage = e.toString();
         _isLoading = false;
       });
+    } finally {
+      if (mounted) {
+        _refreshController.stop();
+        _refreshController.reset();
+      }
     }
   }
 
@@ -153,111 +170,194 @@ class _HostServicesMonitoringDialogState
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.primaryDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-      ),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.85,
-        height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(AppConfig.padding * 1.5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(context),
-            const SizedBox(height: 16),
-            if (_isLoading && _services.isEmpty)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_errorMessage.isNotEmpty && _services.isEmpty)
-              Expanded(child: _buildErrorState(context))
-            else
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSummaryCards(context),
-                      const SizedBox(height: 24),
-                      _buildStatusChart(context),
-                      const SizedBox(height: 24),
-                      _buildServicesTable(context),
-                    ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final width = isMobile
+            ? constraints.maxWidth * 0.95
+            : constraints.maxWidth * 0.85;
+        final height = isMobile
+            ? constraints.maxHeight * 0.9
+            : constraints.maxHeight * 0.8;
+
+        return Dialog(
+          backgroundColor: AppColors.primaryDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+          ),
+          child: Container(
+            width: width > 1200 ? 1200 : width,
+            height: height,
+            padding: const EdgeInsets.all(AppConfig.padding * 1.5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 16),
+                if (_isLoading && _services.isEmpty)
+                  const Expanded(
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (_errorMessage.isNotEmpty && _services.isEmpty)
+                  Expanded(child: _buildErrorState(context))
+                else
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSummaryCards(context),
+                          const SizedBox(height: 24),
+                          _buildStatusChart(context),
+                          const SizedBox(height: 24),
+                          _buildServicesTable(context),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.accentOrange.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            EvaIcons.activity,
-            color: AppColors.accentOrange,
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Services Monitoring',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.textOnPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              Text(
-                widget.host.hostname,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textLight,
-                    ),
+    return LayoutBuilder(builder: (context, constraints) {
+      final isSmall = constraints.maxWidth < 600;
+      if (isSmall) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentOrange.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    EvaIcons.activity,
+                    color: AppColors.accentOrange,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Services Monitoring',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: AppColors.textOnPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      Text(
+                        widget.host.hostname,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textLight,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: RotationTransition(
+                    turns: _refreshController,
+                    child: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+                  ),
+                  onPressed: _isLoading ? null : _loadServicesAndLogs,
+                  tooltip: 'Refresh',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textOnPrimary),
+                  onPressed: () => Navigator.of(context).pop(),
+                  tooltip: 'Close',
+                ),
+              ],
+            ),
+            if (_lastUpdated.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Updated: ${_formatTimestamp(_lastUpdated)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                ),
               ),
             ],
-          ),
-        ),
-        if (_lastUpdated.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Text(
-              'Updated: ${_formatTimestamp(_lastUpdated)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textLight,
-                  ),
+          ],
+        );
+      } else {
+        return Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.accentOrange.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                EvaIcons.activity,
+                color: AppColors.accentOrange,
+                size: 24,
+              ),
             ),
-          ),
-        IconButton(
-          icon: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.refresh, color: AppColors.textOnPrimary),
-          onPressed: _isLoading ? null : _loadServicesAndLogs,
-          tooltip: 'Refresh',
-        ),
-        IconButton(
-          icon: const Icon(Icons.close, color: AppColors.textOnPrimary),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Close',
-        ),
-      ],
-    );
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Services Monitoring',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppColors.textOnPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  Text(
+                    widget.host.hostname,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textLight,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            if (_lastUpdated.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  'Updated: ${_formatTimestamp(_lastUpdated)}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                ),
+              ),
+            IconButton(
+              icon: RotationTransition(
+                turns: _refreshController,
+                child: const Icon(Icons.refresh, color: AppColors.textOnPrimary),
+              ),
+              onPressed: _isLoading ? null : _loadServicesAndLogs,
+              tooltip: 'Refresh',
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: AppColors.textOnPrimary),
+              onPressed: () => Navigator.of(context).pop(),
+              tooltip: 'Close',
+            ),
+          ],
+        );
+      }
+    });
   }
 
   Widget _buildSummaryCards(BuildContext context) {
@@ -280,65 +380,23 @@ class _HostServicesMonitoringDialogState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 500;
-
-        if (isCompact) {
-          return Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      context,
-                      icon: EvaIcons.layersOutline,
-                      label: 'Total Services',
-                      value: _services.length.toString(),
-                      color: AppColors.info,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      context,
-                      icon: EvaIcons.checkmarkCircle2,
-                      label: 'Active',
-                      value: activeServices.toString(),
-                      color: AppColors.success,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildSummaryCard(
-                      context,
-                      icon: EvaIcons.alertTriangle,
-                      label: 'Errors',
-                      value: errorServices.toString(),
-                      color: AppColors.error,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildSummaryCard(
-                      context,
-                      icon: EvaIcons.fileTextOutline,
-                      label: 'Unsent Logs',
-                      value: unsentLogs.toString(),
-                      color: AppColors.warning,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          );
+        final width = constraints.maxWidth;
+        int columns = 4;
+        if (width < 500) {
+          columns = 1;
+        } else if (width < 900) {
+          columns = 2;
         }
 
-        return Row(
+        final spacing = 12.0;
+        final cardWidth = (width - (columns - 1) * spacing) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
           children: [
-            Expanded(
+            SizedBox(
+              width: cardWidth,
               child: _buildSummaryCard(
                 context,
                 icon: EvaIcons.layersOutline,
@@ -347,8 +405,8 @@ class _HostServicesMonitoringDialogState
                 color: AppColors.info,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: cardWidth,
               child: _buildSummaryCard(
                 context,
                 icon: EvaIcons.checkmarkCircle2,
@@ -357,8 +415,8 @@ class _HostServicesMonitoringDialogState
                 color: AppColors.success,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: cardWidth,
               child: _buildSummaryCard(
                 context,
                 icon: EvaIcons.alertTriangle,
@@ -367,8 +425,8 @@ class _HostServicesMonitoringDialogState
                 color: AppColors.error,
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            SizedBox(
+              width: cardWidth,
               child: _buildSummaryCard(
                 context,
                 icon: EvaIcons.fileTextOutline,
@@ -478,59 +536,79 @@ class _HostServicesMonitoringDialogState
       );
     }
 
-    return Card(
-      color: AppColors.primaryBase,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppConfig.padding * 1.5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  EvaIcons.trendingUpOutline,
-                  size: 20,
-                  color: AppColors.accentOrange,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Service Status Over Time',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textOnPrimary,
-                      ),
-                ),
-                const Spacer(),
-                _buildServiceStatusLegend(),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: LineChart(_buildServiceStatusChartData()),
-            ),
-            if (_serviceLogsHistory.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _buildServiceLegend(),
-            ],
-          ],
+    return LayoutBuilder(builder: (context, constraints) {
+      // Calculate required width based on data points
+      int maxPoints = 0;
+      for (var logs in _serviceLogsHistory.values) {
+        if (logs.length > maxPoints) {
+          maxPoints = logs.length;
+        }
+      }
+      
+      // Ensure at least 40px per data point, or min 600px, or available width
+      final double pointsWidth = maxPoints * 40.0;
+      final double minChartWidth = 600.0;
+      final double availableWidth = constraints.maxWidth - (AppConfig.padding * 3);
+      
+      final double chartWidth = math.max(availableWidth, math.max(minChartWidth, pointsWidth));
+
+      return Card(
+        color: AppColors.primaryBase,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
         ),
-      ),
-    );
+        child: Padding(
+          padding: const EdgeInsets.all(AppConfig.padding * 1.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    EvaIcons.trendingUpOutline,
+                    size: 20,
+                    color: AppColors.accentOrange,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Service Status Over Time',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textOnPrimary,
+                        ),
+                  ),
+                  const Spacer(),
+                  _buildServiceStatusLegend(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: chartWidth,
+                  height: 250,
+                  child: LineChart(_buildServiceStatusChartData()),
+                ),
+              ),
+              if (_serviceLogsHistory.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildServiceLegend(),
+              ],
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildServiceStatusLegend() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
       children: [
         _buildLegendItem('UP', AppColors.success),
-        const SizedBox(width: 8),
         _buildLegendItem('WARN', AppColors.warning),
-        const SizedBox(width: 8),
         _buildLegendItem('DOWN', AppColors.error),
       ],
     );
@@ -859,14 +937,16 @@ class _HostServicesMonitoringDialogState
               ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          Scrollbar(
+            thumbVisibility: true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
             child: DataTable(
               headingTextStyle: Theme.of(context)
                   .textTheme
                   .titleSmall
                   ?.copyWith(
-                      fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      fontWeight: FontWeight.bold, color: AppColors.textOnPrimary),
               headingRowColor: WidgetStateProperty.all(
                 AppColors.primaryDark.withValues(alpha: 0.5),
               ),
@@ -902,7 +982,7 @@ class _HostServicesMonitoringDialogState
                         service.id,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: AppColors.textLight,
                         ),
                       ),
                     ),
@@ -963,7 +1043,7 @@ class _HostServicesMonitoringDialogState
                             fontWeight: FontWeight.bold,
                             color: service.unsentLogs > 0
                                 ? AppColors.warning
-                                : AppColors.textSecondary,
+                                : AppColors.textLight,
                           ),
                         ),
                       ),
@@ -975,7 +1055,7 @@ class _HostServicesMonitoringDialogState
                               service.serviceType!,
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: AppColors.textSecondary,
+                                color: AppColors.textLight,
                               ),
                             )
                           : const Text('Unknown'),
@@ -987,7 +1067,7 @@ class _HostServicesMonitoringDialogState
                             : 'N/A',
                         style: const TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondary,
+                          color: AppColors.textLight,
                         ),
                       ),
                     ),
@@ -1018,7 +1098,8 @@ class _HostServicesMonitoringDialogState
               }).toList(),
             ),
           ),
-        ],
+        ),
+      ],
       ),
     );
   }
@@ -1230,139 +1311,151 @@ class _UnsentLogsDialogState extends State<_UnsentLogsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: AppColors.primaryDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-      ),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.7,
-        height: MediaQuery.of(context).size.height * 0.7,
-        padding: const EdgeInsets.all(AppConfig.padding * 1.5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final width = isMobile
+            ? constraints.maxWidth * 0.95
+            : constraints.maxWidth * 0.7;
+        final height = isMobile
+            ? constraints.maxHeight * 0.9
+            : constraints.maxHeight * 0.7;
+
+        return Dialog(
+          backgroundColor: AppColors.primaryDark,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+          ),
+          child: Container(
+            width: width,
+            height: height,
+            padding: const EdgeInsets.all(AppConfig.padding * 1.5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.warning.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    EvaIcons.emailOutline,
-                    color: AppColors.warning,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Unsent Logs',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: AppColors.textOnPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      Text(
-                        widget.serviceName,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textLight,
-                            ),
+                      child: const Icon(
+                        EvaIcons.emailOutline,
+                        color: AppColors.warning,
+                        size: 24,
                       ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textOnPrimary),
-                  onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Close',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Content
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _errorMessage.isNotEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(EvaIcons.alertCircle,
-                                  size: 48, color: AppColors.error),
-                              const SizedBox(height: 12),
-                              Text(
-                                _errorMessage,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: AppColors.textLight),
-                              ),
-                              const SizedBox(height: 12),
-                              ElevatedButton.icon(
-                                onPressed: _loadUnsentLogs,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Retry'),
-                              ),
-                            ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Unsent Logs',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: AppColors.textOnPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
-                        )
-                      : _logs.isEmpty
-                          ? const Center(
+                          Text(
+                            widget.serviceName,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.textLight,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textOnPrimary),
+                      onPressed: () => Navigator.of(context).pop(),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Content
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _errorMessage.isNotEmpty
+                          ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(EvaIcons.checkmarkCircle2,
-                                      size: 48, color: AppColors.success),
-                                  SizedBox(height: 12),
+                                  const Icon(EvaIcons.alertCircle,
+                                      size: 48, color: AppColors.error),
+                                  const SizedBox(height: 12),
                                   Text(
-                                    'No unsent logs',
-                                    style: TextStyle(color: AppColors.textLight),
+                                    _errorMessage,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: AppColors.textLight),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: _loadUnsentLogs,
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Retry'),
                                   ),
                                 ],
                               ),
                             )
-                          : _buildLogsList(),
-            ),
-            // Footer with action button
-            if (_logs.isNotEmpty) ...[
-              const Divider(color: AppColors.border),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${_logs.length} unsent logs',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textLight,
+                          : _logs.isEmpty
+                              ? const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(EvaIcons.checkmarkCircle2,
+                                          size: 48, color: AppColors.success),
+                                      SizedBox(height: 12),
+                                      Text(
+                                        'No unsent logs',
+                                        style: TextStyle(color: AppColors.textLight),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : _buildLogsList(),
+                ),
+                // Footer with action button
+                if (_logs.isNotEmpty) ...[
+                  const Divider(color: AppColors.border),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${_logs.length} unsent logs',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textLight,
+                            ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: _isClearing ? null : _markAllAsSent,
+                        icon: _isClearing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(EvaIcons.checkmarkCircle2),
+                        label: Text(_isClearing ? 'Clearing...' : 'Mark All as Sent'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: AppColors.textOnPrimary,
                         ),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: _isClearing ? null : _markAllAsSent,
-                    icon: _isClearing
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(EvaIcons.checkmarkCircle2),
-                    label: Text(_isClearing ? 'Clearing...' : 'Mark All as Sent'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.success,
-                      foregroundColor: AppColors.textOnPrimary,
-                    ),
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

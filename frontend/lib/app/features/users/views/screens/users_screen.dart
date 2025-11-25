@@ -22,6 +22,14 @@ class UsersScreen extends StatelessWidget {
     final controller = Get.find<UsersController>();
 
     return BaseScreenWrapper(
+      showMobileHeader: false,
+      floatingActionButton: MediaQuery.of(context).size.width < 900
+          ? FloatingActionButton.extended(
+              onPressed: () => _showUserDialog(context),
+              icon: const Icon(Icons.add, color: AppColors.textOnPrimary),
+              label: const Text('Add User'),
+            )
+          : null,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
           return _buildMobileLayout(context, controller);
@@ -40,7 +48,10 @@ class UsersScreen extends StatelessWidget {
     return Column(
       children: [
         _buildHeader(context, controller, showMenuButton: true),
-        _buildFilters(context, controller),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: _buildFilters(context, controller, isMobile: true),
+        ),
         Expanded(
           child: Obx(() {
             if (controller.isLoading.value && controller.users.isEmpty) {
@@ -55,8 +66,11 @@ class UsersScreen extends StatelessWidget {
               onRefresh: controller.refresh,
               child: ListView.builder(
                 padding: const EdgeInsets.all(AppConfig.padding),
-                itemCount: controller.users.length,
+                itemCount: controller.users.length + 1,
                 itemBuilder: (context, index) {
+                  if (index == controller.users.length) {
+                    return _buildPagination(context, controller);
+                  }
                   final user = controller.users[index];
                   return UserCard(
                     user: user,
@@ -65,14 +79,14 @@ class UsersScreen extends StatelessWidget {
                         ? controller.deactivateUser(user.id)
                         : controller.activateUser(user.id),
                     onAssignRoles: () => _showAssignRolesDialog(context, user),
-                    onResetPassword: () => _showResetPasswordDialog(context, user),
+                    onResetPassword: () =>
+                        _showResetPasswordDialog(context, user),
                   );
                 },
               ),
             );
           }),
         ),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -80,7 +94,7 @@ class UsersScreen extends StatelessWidget {
   Widget _buildTabletLayout(BuildContext context, UsersController controller) {
     return Column(
       children: [
-        _buildHeader(context, controller),
+        _buildHeader(context, controller, showMenuButton: true),
         _buildFilters(context, controller),
         Expanded(
           child: Obx(() {
@@ -96,20 +110,23 @@ class UsersScreen extends StatelessWidget {
               padding: const EdgeInsets.all(AppConfig.padding),
               child: Align(
                 alignment: Alignment.topCenter,
-                child: UserTable(
-                  users: controller.users,
-                  onEdit: (user) => _showUserDialog(context, user: user),
-                  onToggleActive: (user) => user.isActive
-                      ? controller.deactivateUser(user.id)
-                      : controller.activateUser(user.id),
-                  onAssignRoles: (user) => _showAssignRolesDialog(context, user),
-                  onResetPassword: (user) => _showResetPasswordDialog(context, user),
+                child: SingleChildScrollView(
+                  child: UserTable(
+                    users: controller.users,
+                    onEdit: (user) => _showUserDialog(context, user: user),
+                    onToggleActive: (user) => user.isActive
+                        ? controller.deactivateUser(user.id)
+                        : controller.activateUser(user.id),
+                    onAssignRoles: (user) => _showAssignRolesDialog(context, user),
+                    onResetPassword: (user) =>
+                        _showResetPasswordDialog(context, user),
+                    footer: _buildPagination(context, controller),
+                  ),
                 ),
               ),
             );
           }),
         ),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -133,20 +150,23 @@ class UsersScreen extends StatelessWidget {
               padding: const EdgeInsets.all(AppConfig.padding * 2),
               child: Align(
                 alignment: Alignment.topCenter,
-                child: UserTable(
-                  users: controller.users,
-                  onEdit: (user) => _showUserDialog(context, user: user),
-                  onToggleActive: (user) => user.isActive
-                      ? controller.deactivateUser(user.id)
-                      : controller.activateUser(user.id),
-                  onAssignRoles: (user) => _showAssignRolesDialog(context, user),
-                  onResetPassword: (user) => _showResetPasswordDialog(context, user),
+                child: SingleChildScrollView(
+                  child: UserTable(
+                    users: controller.users,
+                    onEdit: (user) => _showUserDialog(context, user: user),
+                    onToggleActive: (user) => user.isActive
+                        ? controller.deactivateUser(user.id)
+                        : controller.activateUser(user.id),
+                    onAssignRoles: (user) => _showAssignRolesDialog(context, user),
+                    onResetPassword: (user) =>
+                        _showResetPasswordDialog(context, user),
+                    footer: _buildPagination(context, controller),
+                  ),
                 ),
               ),
             );
           }),
         ),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -193,22 +213,26 @@ class UsersScreen extends StatelessWidget {
             onPressed: controller.refresh,
             tooltip: 'Refresh',
           ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
-            onPressed: () => _showUserDialog(context),
-            icon: const Icon(Icons.add, size: 18, color: AppColors.textOnPrimary),
-            label: const Text('Add User'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryBase,
-              foregroundColor: AppColors.textOnPrimary,
+          if (MediaQuery.of(context).size.width >= 900) ...[
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () => _showUserDialog(context),
+              icon: const Icon(Icons.add,
+                  size: 18, color: AppColors.textOnPrimary),
+              label: const Text('Add User'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryBase,
+                foregroundColor: AppColors.textOnPrimary,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildFilters(BuildContext context, UsersController controller) {
+  Widget _buildFilters(BuildContext context, UsersController controller,
+      {bool isMobile = false}) {
     return Container(
       padding: const EdgeInsets.all(AppConfig.padding),
       decoration: BoxDecoration(
@@ -255,7 +279,8 @@ class UsersScreen extends StatelessWidget {
                         ? AppColors.textOnPrimary
                         : AppColors.textSecondary),
               )),
-          const Spacer(),
+          if (!isMobile) const Spacer(),
+          if (isMobile) const SizedBox(width: 16),
           Obx(() => Text(
                 '${controller.totalUsers.value} users',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textLight),
@@ -272,7 +297,7 @@ class UsersScreen extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.all(AppConfig.padding),
         decoration: BoxDecoration(
-          color: AppColors.primaryDark.withOpacity(0.5),
+          color: Colors.transparent, // Remove background color as it's now in card
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

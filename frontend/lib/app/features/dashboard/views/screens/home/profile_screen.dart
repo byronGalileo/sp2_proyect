@@ -11,6 +11,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseScreenWrapper(
+      showMobileHeader: false,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
           return _buildMobileLayout(context);
@@ -38,7 +39,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildTabletLayout(BuildContext context) {
     return Column(
       children: [
-        _buildHeader(context),
+        _buildHeader(context, showMenuButton: true),
         const Expanded(child: ProfilePage()),
       ],
     );

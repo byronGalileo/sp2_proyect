@@ -18,30 +18,53 @@ class MonitoringDashboardScreen extends StatelessWidget {
     final controller = Get.put(MonitoringDashboardController());
 
     return BaseScreenWrapper(
+      showMobileHeader: false,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
-          return _buildMobileLayout(context, controller);
+          return _buildDashboardLayout(
+            context,
+            controller,
+            padding: AppConfig.padding,
+            spacing: 24,
+            showMenuButton: true,
+          );
         },
         tabletBuilder: (context, constraints) {
-          return _buildTabletLayout(context, controller);
+          return _buildDashboardLayout(
+            context,
+            controller,
+            padding: AppConfig.padding * 2,
+            spacing: 32,
+            showMenuButton: true,
+          );
         },
         desktopBuilder: (context, constraints) {
-          return _buildDesktopLayout(context, controller);
+          return _buildDashboardLayout(
+            context,
+            controller,
+            padding: AppConfig.padding * 3,
+            spacing: 40,
+          );
         },
       ),
     );
   }
 
-  Widget _buildMobileLayout(
-      BuildContext context, MonitoringDashboardController controller) {
+  Widget _buildDashboardLayout(
+    BuildContext context,
+    MonitoringDashboardController controller, {
+    required double padding,
+    required double spacing,
+    bool showMenuButton = false,
+  }) {
     return Column(
       children: [
-        _buildHeader(context, controller, showMenuButton: true),
+        _buildHeader(context, controller, showMenuButton: showMenuButton),
         Expanded(
           child: Container(
             color: AppColors.background,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConfig.padding),
+              padding: EdgeInsets.all(padding),
               child: Column(
                 children: [
                   Obx(() {
@@ -51,77 +74,7 @@ class MonitoringDashboardScreen extends StatelessWidget {
                     return Column(
                       children: [
                         _buildStatCards(context, controller),
-                        const SizedBox(height: 24),
-                        _buildTimePeriodSelector(context, controller),
-                        const SizedBox(height: 16),
-                        _buildLogsChart(context, controller),
-                      ],
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTabletLayout(
-      BuildContext context, MonitoringDashboardController controller) {
-    return Column(
-      children: [
-        _buildHeader(context, controller),
-        Expanded(
-          child: Container(
-            color: AppColors.background,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConfig.padding * 2),
-              child: Column(
-                children: [
-                  Obx(() {
-                    if (controller.isLoading.value) {
-                      return const LoadingWidget();
-                    }
-                    return Column(
-                      children: [
-                        _buildStatCards(context, controller),
-                        const SizedBox(height: 32),
-                        _buildTimePeriodSelector(context, controller),
-                        const SizedBox(height: 16),
-                        _buildLogsChart(context, controller),
-                      ],
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDesktopLayout(
-      BuildContext context, MonitoringDashboardController controller) {
-    return Column(
-      children: [
-        _buildHeader(context, controller),
-        Expanded(
-          child: Container(
-            color: AppColors.background,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConfig.padding * 3),
-              child: Column(
-                children: [
-                  Obx(() {
-                    if (controller.isLoading.value) {
-                      return const LoadingWidget();
-                    }
-                    return Column(
-                      children: [
-                        _buildStatCards(context, controller),
-                        const SizedBox(height: 40),
+                        SizedBox(height: spacing),
                         _buildTimePeriodSelector(context, controller),
                         const SizedBox(height: 16),
                         _buildLogsChart(context, controller),

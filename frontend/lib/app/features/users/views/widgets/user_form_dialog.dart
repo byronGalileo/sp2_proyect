@@ -97,12 +97,39 @@ class _UserFormDialogState extends State<UserFormDialog> {
     }
   }
 
+  Widget _buildResponsiveRow({
+    required List<Widget> children,
+    required bool isMobile,
+  }) {
+    if (isMobile) {
+      return Column(
+        children: children.map((child) {
+          if (child is Expanded) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: child.child,
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: child,
+          );
+        }).toList(),
+      );
+    } else {
+      return Row(children: children);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: SingleChildScrollView(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(AppConfig.padding * 2),
             child: Form(
@@ -127,7 +154,8 @@ class _UserFormDialogState extends State<UserFormDialog> {
                   const SizedBox(height: 24),
 
                   // First Name and Last Name Row
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: CustomTextField(
@@ -137,7 +165,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
                           textInputAction: TextInputAction.next,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      if (!isMobile) const SizedBox(width: 12),
                       Expanded(
                         child: CustomTextField(
                           controller: _lastNameController,
@@ -148,7 +176,7 @@ class _UserFormDialogState extends State<UserFormDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  if (!isMobile) const SizedBox(height: 16),
 
                   // Username
                   CustomTextField(
@@ -239,6 +267,15 @@ class _UserFormDialogState extends State<UserFormDialog> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            padding: isMobile
+                                ? const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12)
+                                : null,
+                            visualDensity: isMobile
+                                ? VisualDensity.compact
+                                : VisualDensity.standard,
+                          ),
                           child: const Text('Cancel'),
                         ),
                         const SizedBox(width: 12),
@@ -255,6 +292,8 @@ class _UserFormDialogState extends State<UserFormDialog> {
             ),
           ),
         ),
+      );
+        },
       ),
     );
   }

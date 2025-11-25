@@ -7,6 +7,10 @@ class CustomButton extends StatelessWidget {
   final bool isLoading;
   final Color? backgroundColor;
   final Color? textColor;
+  final double? width;
+  final double? height;
+  final double? fontSize;
+  final EdgeInsetsGeometry? padding;
 
   const CustomButton({
     Key? key,
@@ -15,17 +19,23 @@ class CustomButton extends StatelessWidget {
     this.isLoading = false,
     this.backgroundColor,
     this.textColor,
+    this.width,
+    this.height,
+    this.fontSize,
+    this.padding,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: AppConfig.buttonHeight,
-        minWidth: 100, // Minimum width for the button
+      constraints: BoxConstraints(
+        minHeight: height ?? AppConfig.buttonHeight,
+        minWidth: width ?? 100, // Minimum width for the button
+        maxWidth: width ?? double.infinity,
       ),
       child: SizedBox(
-        height: AppConfig.buttonHeight,
+        height: height ?? AppConfig.buttonHeight,
+        width: width,
         child: ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
@@ -36,21 +46,21 @@ class CustomButton extends StatelessWidget {
             ),
             elevation: 2,
             disabledBackgroundColor: Colors.grey[300],
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
           child: isLoading
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
+              ? SizedBox(
+                  height: (height != null && height! < 40) ? 16 : 20,
+                  width: (height != null && height! < 40) ? 16 : 20,
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
               : Text(
                   text,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: fontSize ?? 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

@@ -10,6 +10,7 @@ class UserTable extends StatelessWidget {
   final Function(User) onToggleActive;
   final Function(User) onAssignRoles;
   final Function(User) onResetPassword;
+  final Widget? footer;
 
   const UserTable({
     super.key,
@@ -18,6 +19,7 @@ class UserTable extends StatelessWidget {
     required this.onToggleActive,
     required this.onAssignRoles,
     required this.onResetPassword,
+    this.footer,
   });
 
   @override
@@ -28,33 +30,45 @@ class UserTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConfig.borderRadius),
         side: BorderSide(color: AppColors.border.withOpacity(0.5)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          headingTextStyle: Theme.of(context)
-              .textTheme
-              .titleSmall
-              ?.copyWith(
-                  fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-          headingRowColor: WidgetStateProperty.all(
-            Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
-          ),
-          dataTextStyle:
-              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-          columnSpacing: 20,
-          horizontalMargin: 16,
-          columns: const [
-            DataColumn(label: Text('User')),
-            DataColumn(label: Text('Email')),
-            DataColumn(label: Text('Phone')),
-            DataColumn(label: Text('Roles')),
-            DataColumn(label: Text('Status')),
-            DataColumn(label: Text('Actions')),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingTextStyle: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary),
+                headingRowColor: WidgetStateProperty.all(
+                  Theme.of(context).scaffoldBackgroundColor.withOpacity(0.2),
+                ),
+                dataTextStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                columnSpacing: 20,
+                horizontalMargin: 16,
+                columns: const [
+                  DataColumn(label: Text('User')),
+                  DataColumn(label: Text('Email')),
+                  DataColumn(label: Text('Phone')),
+                  DataColumn(label: Text('Roles')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Actions')),
+                ],
+                rows: users.map((user) => _buildDataRow(context, user)).toList(),
+              ),
+            ),
+            if (footer != null) ...[
+              const Divider(height: 1),
+              footer!,
+            ],
           ],
-          rows: users.map((user) => _buildDataRow(context, user)).toList(),
         ),
       ),
     );

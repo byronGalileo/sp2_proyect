@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../config/app_config.dart';
@@ -15,15 +16,20 @@ class StorageService {
   Future<void> saveAuthData(AuthData authData) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Save tokens securely
-    await _secureStorage.write(
-      key: AppConfig.tokenKey,
-      value: authData.accessToken,
-    );
-    await _secureStorage.write(
-      key: AppConfig.refreshTokenKey,
-      value: authData.refreshToken,
-    );
+    if (kIsWeb) {
+      await prefs.setString(AppConfig.tokenKey, authData.accessToken);
+      await prefs.setString(AppConfig.refreshTokenKey, authData.refreshToken);
+    } else {
+      // Save tokens securely
+      await _secureStorage.write(
+        key: AppConfig.tokenKey,
+        value: authData.accessToken,
+      );
+      await _secureStorage.write(
+        key: AppConfig.refreshTokenKey,
+        value: authData.refreshToken,
+      );
+    }
 
     // Save user data in shared preferences
     await prefs.setString(
@@ -33,11 +39,21 @@ class StorageService {
   }
 
   Future<String?> getToken() async {
-    return await _secureStorage.read(key: AppConfig.tokenKey);
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(AppConfig.tokenKey);
+    } else {
+      return await _secureStorage.read(key: AppConfig.tokenKey);
+    }
   }
 
   Future<String?> getRefreshToken() async {
-    return await _secureStorage.read(key: AppConfig.refreshTokenKey);
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(AppConfig.refreshTokenKey);
+    } else {
+      return await _secureStorage.read(key: AppConfig.refreshTokenKey);
+    }
   }
 
   Future<User?> getUser() async {
@@ -53,8 +69,13 @@ class StorageService {
   Future<void> clearAuthData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await _secureStorage.delete(key: AppConfig.tokenKey);
-    await _secureStorage.delete(key: AppConfig.refreshTokenKey);
+    if (kIsWeb) {
+      await prefs.remove(AppConfig.tokenKey);
+      await prefs.remove(AppConfig.refreshTokenKey);
+    } else {
+      await _secureStorage.delete(key: AppConfig.tokenKey);
+      await _secureStorage.delete(key: AppConfig.refreshTokenKey);
+    }
     await prefs.remove(AppConfig.userKey);
   }
 

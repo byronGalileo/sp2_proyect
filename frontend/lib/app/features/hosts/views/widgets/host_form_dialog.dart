@@ -136,6 +136,40 @@ class _HostFormDialogState extends State<HostFormDialog> {
       Navigator.of(context).pop();
     }
   }
+  
+  Widget _buildResponsiveRow({
+    required List<Widget> children,
+    required bool isMobile,
+  }) {
+    if (isMobile) {
+      return Column(
+        children: children.map((child) {
+          // If the child is an Expanded widget, we need to extract its child
+          // because Expanded cannot be used directly inside a Column (unless flex is needed, but here we want stacking)
+          if (child is Expanded) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: child.child,
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: child,
+          );
+        }).toList(),
+      );
+    } else {
+      // For desktop, we need to ensure children are separated by spacing
+      final spacedChildren = <Widget>[];
+      for (var i = 0; i < children.length; i++) {
+        spacedChildren.add(children[i]);
+        if (i < children.length - 1) {
+          spacedChildren.add(const SizedBox(width: 12));
+        }
+      }
+      return Row(children: spacedChildren);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,12 +181,16 @@ class _HostFormDialogState extends State<HostFormDialog> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(AppConfig.padding * 2),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+                
+                return Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   Row(
                     children: [
                       Text(
@@ -178,14 +216,15 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   const SizedBox(height: 16),
 
                   // Host ID and Hostname Row
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _hostIdController,
                           enabled: false,
                           decoration: InputDecoration(
-                            labelText: isEditing ? 'Host ID' : 'Host ID (Auto-generated)',
+                            labelText: isEditing ? 'Host ID' : 'Host ID (Auto)',
                             prefixIcon: const Icon(Icons.fingerprint),
                             helperText: isEditing ? null : 'Generated from hostname',
                             border: OutlineInputBorder(
@@ -195,14 +234,13 @@ class _HostFormDialogState extends State<HostFormDialog> {
                           textInputAction: TextInputAction.next,
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _hostnameController,
                           decoration: InputDecoration(
                             labelText: 'Hostname *',
                             prefixIcon: const Icon(Icons.computer),
-                            helperText: 'Example: web-server-01, db-main',
+                            helperText: 'Example: web-server-01',
                             filled: true,
                             fillColor: Colors.white,
                             enabledBorder: OutlineInputBorder(
@@ -243,11 +281,13 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   const SizedBox(height: 16),
 
                   // Environment and Region Row
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: Obx(() => DropdownButtonFormField<String>(
                               value: _selectedEnvironment,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Environment *',
                                 border: OutlineInputBorder(),
@@ -256,7 +296,10 @@ class _HostFormDialogState extends State<HostFormDialog> {
                               items: controller.availableEnvironments
                                   .map((env) => DropdownMenuItem(
                                         value: env,
-                                        child: Text(env),
+                                        child: Text(
+                                          env,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (value) {
@@ -272,10 +315,10 @@ class _HostFormDialogState extends State<HostFormDialog> {
                               },
                             )),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Obx(() => DropdownButtonFormField<String>(
                               value: _selectedRegion,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Region *',
                                 border: OutlineInputBorder(),
@@ -284,7 +327,10 @@ class _HostFormDialogState extends State<HostFormDialog> {
                               items: controller.availableRegions
                                   .map((region) => DropdownMenuItem(
                                         value: region,
-                                        child: Text(region),
+                                        child: Text(
+                                          region,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (value) {
@@ -314,7 +360,8 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   const SizedBox(height: 16),
 
                   // SSH User and Port Row
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         flex: 2,
@@ -331,7 +378,6 @@ class _HostFormDialogState extends State<HostFormDialog> {
                           textInputAction: TextInputAction.next,
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _sshPortController,
@@ -441,7 +487,8 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   const SizedBox(height: 16),
 
                   // OS and Purpose Row
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: CustomTextField(
@@ -451,7 +498,6 @@ class _HostFormDialogState extends State<HostFormDialog> {
                           textInputAction: TextInputAction.next,
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: CustomTextField(
                           controller: _purposeController,
@@ -483,6 +529,7 @@ class _HostFormDialogState extends State<HostFormDialog> {
                   if (isEditing)
                     DropdownButtonFormField<String>(
                       value: _selectedStatus,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         labelText: 'Status',
                         border: OutlineInputBorder(),
@@ -510,18 +557,25 @@ class _HostFormDialogState extends State<HostFormDialog> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
                         child: const Text('Cancel'),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       CustomButton(
-                        text: isEditing ? 'Update Host' : 'Create Host',
+                        text: isEditing ? 'Update' : 'Create',
                         onPressed: _submit,
+                        // Assuming CustomButton accepts these properties or wrapping it
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
+            );
+          },
+        ),
           ),
         ),
       ),

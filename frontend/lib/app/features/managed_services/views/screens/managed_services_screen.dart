@@ -36,6 +36,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseScreenWrapper(
+      showMobileHeader: false, // Disable default header to avoid duplication
       floatingActionButton: MediaQuery.of(context).size.width < 900
           ? FloatingActionButton.extended(
               onPressed: () => _showServiceDialog(context),
@@ -45,42 +46,53 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           : null,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
-          return _buildMobileLayout(context, controller);
+          return _buildManagedServicesLayout(
+            context,
+            controller,
+            padding: AppConfig.padding,
+            showMenuButton: true,
+            showAddButton: false,
+            isMobile: true,
+          );
         },
         tabletBuilder: (context, constraints) {
-          return _buildDesktopLayout(context, controller);
+          return _buildManagedServicesLayout(
+            context,
+            controller,
+            padding: AppConfig.padding,
+            showMenuButton: true,
+            showAddButton: true,
+            isMobile: false,
+          );
         },
         desktopBuilder: (context, constraints) {
-          return _buildDesktopLayout(context, controller);
+          return _buildManagedServicesLayout(
+            context,
+            controller,
+            padding: AppConfig.padding * 2,
+            showMenuButton: false,
+            showAddButton: true,
+            isMobile: false,
+          );
         },
       ),
     );
   }
 
-  Widget _buildMobileLayout(
-      BuildContext context, ManagedServicesController controller) {
+  Widget _buildManagedServicesLayout(
+    BuildContext context,
+    ManagedServicesController controller, {
+    required double padding,
+    bool showMenuButton = false,
+    bool showAddButton = true,
+    required bool isMobile,
+  }) {
     return Column(
       children: [
-        _buildHeader(context, controller, showMenuButton: true, showAddButton: false),
-        _buildFilters(context, controller),
-        // Service count above the list
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConfig.padding,
-            vertical: AppConfig.padding / 2,
-          ),
-          child: Row(
-            children: [
-              Obx(() => Text( // The text color should be light to be visible on the dark background
-                    '${controller.totalServices.value} services',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: AppColors.textLight),
-                  )),
-            ],
-          ),
-        ),
+        _buildHeader(context, controller,
+            showMenuButton: showMenuButton, showAddButton: showAddButton),
+        if (!isMobile) _buildFilters(context, controller),
+
         Expanded(
           child: Obx(() {
             if (controller.isLoading.value && controller.services.isEmpty) {
@@ -92,91 +104,87 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
               return _buildErrorState(context, controller);
             }
 
-            if (controller.services.isEmpty) {
-              return const Center(child: Text('No services found'));
-            }
+            if (isMobile) {
+              return Column(
+                children: [
+                  _buildPagination(context, controller),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: controller.refresh,
+                      child: ListView.builder(
+                        padding: EdgeInsets.only(
+                          left: padding,
+                          top: padding,
+                          right: padding,
+                          bottom: padding + 80,
+                        ),
+                        itemCount: controller.services.length +
+                            1 +
+                            (controller.services.isEmpty ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: _buildFilters(context, controller),
+                            );
+                          }
 
-            return RefreshIndicator(
-              onRefresh: controller.refresh,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(AppConfig.padding),
-                itemCount: controller.services.length,
-                itemBuilder: (context, index) {
-                  final service = controller.services[index];
-                  return ServiceCard(
-                    service: service,
-                    onEdit: (s) => _showServiceDialog(context, service: s),
-                    onDelete: (s) => controller.deleteService(s.serviceId),
-                    onViewLogs: (s) {
-                      // Delete existing controller if it exists to force fresh initialization
-                      try { Get.delete<LogsController>(force: true); } catch (e) {}
-                      Get.toNamed('/monitoring/logs', arguments: {'serviceName': s.serviceId});
-                    },
-                  );
-                },
-              ),
-            );
+                          if (controller.services.isEmpty) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(32.0),
+                                child: Text('No services found'),
+                              ),
+                            );
+                          }
+
+                          final service = controller.services[index - 1];
+                          return ServiceCard(
+                            service: service,
+                            onEdit: (s) =>
+                                _showServiceDialog(context, service: s),
+                            onDelete: (s) =>
+                                controller.deleteService(s.serviceId),
+                            onViewLogs: (s) {
+                              try {
+                                Get.delete<LogsController>(force: true);
+                              } catch (e) {}
+                              Get.toNamed('/monitoring/logs',
+                                  arguments: {'serviceName': s.serviceId});
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            } else {
+              return Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(padding),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Column(
+                      children: [
+                        ServiceTable(
+                          services: controller.services,
+                          onEdit: (service) =>
+                              _showServiceDialog(context, service: service),
+                          onDelete: (service) =>
+                              controller.deleteService(service.serviceId),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPagination(context, controller),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
           }),
         ),
-        _buildPagination(context, controller),
-      ],
-    );
-  }
-
-  Widget _buildDesktopLayout(
-      BuildContext context, ManagedServicesController controller) {
-    return Column(
-      children: [
-        _buildHeader(context, controller),
-        _buildFilters(context, controller),
-        // Service count above the table
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConfig.padding * 2,
-            vertical: AppConfig.padding / 2,
-          ),
-          child: Row(
-            children: [
-              Obx(() => Text( // The text color should be light to be visible on the dark background
-                    '${controller.totalServices.value} services',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: AppColors.textLight),
-                  )),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Obx(() {
-            if (controller.isLoading.value && controller.services.isEmpty) {
-              return const Center(child: LoadingWidget());
-            }
-
-            if (controller.errorMessage.value.isNotEmpty &&
-                controller.services.isEmpty) {
-              return _buildErrorState(context, controller);
-            }
-
-            if (controller.services.isEmpty) {
-              return const Center(child: Text('No services found'));
-            }
-
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConfig.padding * 2),
-              child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ServiceTable(
-                    services: controller.services,
-                    onEdit: (service) =>
-                        _showServiceDialog(context, service: service),
-                    onDelete: (service) =>
-                        controller.deleteService(service.serviceId),
-                  )),
-            );
-          }),
-        ),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -362,6 +370,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Host',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.monitorOutline, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -400,6 +409,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Service',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.cube, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -438,6 +448,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Environment',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.layersOutline, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -476,6 +487,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Region',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.globe, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -514,6 +526,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Status',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.activityOutline, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -607,7 +620,10 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
       if (controller.services.isEmpty) return const SizedBox.shrink();
 
       return Container(
-        padding: const EdgeInsets.all(AppConfig.padding),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConfig.padding,
+          vertical: AppConfig.padding / 2,
+        ),
         decoration: BoxDecoration( // Apply dark background
           color: AppColors.primaryDark.withOpacity(0.5),
         ),
@@ -615,7 +631,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Page ${controller.currentPageNumber} of ${controller.totalPages}',
+              '${controller.totalServices.value} services • Page ${controller.currentPageNumber} of ${controller.totalPages}',
               style: Theme.of(context) // Apply light text color
                   .textTheme
                   .bodyMedium

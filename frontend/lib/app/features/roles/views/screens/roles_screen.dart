@@ -16,6 +16,7 @@ class RolesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseScreenWrapper(
+      showMobileHeader: false,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showRoleDialog(context, null),
         icon: const Icon(Icons.add),
@@ -40,17 +41,11 @@ class RolesScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context, showMenuButton: true),
+        const SizedBox(height: AppConfig.padding),
+        _buildSearchBar(context),
+        const SizedBox(height: 16),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConfig.padding),
-            child: Column(
-              children: [
-                _buildSearchBar(context),
-                const SizedBox(height: 16),
-                _buildRolesList(context, isMobile: true),
-              ],
-            ),
-          ),
+          child: _buildRolesList(context, isMobile: true),
         ),
       ],
     );
@@ -59,7 +54,7 @@ class RolesScreen extends StatelessWidget {
   Widget _buildTabletLayout(BuildContext context) {
     return Column(
       children: [
-        _buildHeader(context),
+        _buildHeader(context, showMenuButton: true),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConfig.padding),
@@ -190,8 +185,7 @@ class RolesScreen extends StatelessWidget {
       return RefreshIndicator(
         onRefresh: () => controller.fetchRoles(),
         child: ListView.builder(
-          // Padding is handled by the SingleChildScrollView in the layout methods
-          // padding: const EdgeInsets.all(AppConfig.padding),
+          padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding),
           itemCount: controller.filteredRoles.length,
           itemBuilder: (context, index) {
             final role = controller.filteredRoles[index];

@@ -46,8 +46,14 @@ class _AssignRolesDialogState extends State<AssignRolesDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 500),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isMobile = constraints.maxWidth < 600;
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: constraints.maxHeight * 0.8,
+            ),
         child: Padding(
           padding: const EdgeInsets.all(AppConfig.padding * 2),
           child: Column(
@@ -74,20 +80,19 @@ class _AssignRolesDialogState extends State<AssignRolesDialog> {
               ),
               const SizedBox(height: 24),
 
-              GetX<UsersController>(
-                builder: (controller) {
-                  if (controller.availableRoles.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(
-                        child: Text('No roles available'),
-                      ),
-                    );
-                  }
+              Flexible(
+                child: GetX<UsersController>(
+                  builder: (controller) {
+                    if (controller.availableRoles.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Center(
+                          child: Text('No roles available'),
+                        ),
+                      );
+                    }
 
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: SingleChildScrollView(
+                    return SingleChildScrollView(
                       child: Column(
                         children: controller.availableRoles.map((role) {
                           return CheckboxListTile(
@@ -114,33 +119,50 @@ class _AssignRolesDialogState extends State<AssignRolesDialog> {
                           );
                         }).toList(),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
 
               const SizedBox(height: 24),
 
               GetX<UsersController>(
-                builder: (controller) => Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    const SizedBox(width: 12),
-                    CustomButton(
-                      text: 'Assign Roles',
-                      onPressed: _submit,
-                      isLoading: controller.isLoading.value,
-                    ),
-                  ],
-                ),
+                builder: (controller) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          padding: isMobile
+                              ? const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8)
+                              : null,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 8),
+                      CustomButton(
+                        text: 'Assign Roles',
+                        onPressed: _submit,
+                        isLoading: controller.isLoading.value,
+                        width: isMobile ? 110 : null,
+                        height: isMobile ? 36 : 48,
+                        fontSize: isMobile ? 13 : 16,
+                        padding: isMobile
+                            ? const EdgeInsets.symmetric(horizontal: 12)
+                            : null,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
-        ),
+          ),
+        );
+      },
       ),
     );
   }

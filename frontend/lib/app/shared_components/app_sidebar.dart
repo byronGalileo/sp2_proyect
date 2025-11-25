@@ -14,115 +14,117 @@ class AppSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.primaryDark, // Dark blue background
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10),
-            child: AuthUserProfile(),
-          ),
-          const SizedBox(height: 15),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: SelectionButton(
-              data: [
-                SelectionButtonData(
-                  activeIcon: EvaIcons.home,
-                  icon: EvaIcons.homeOutline,
-                  label: "Home",
-                ),
-                SelectionButtonData(
-                  activeIcon: EvaIcons.wifi,
-                  icon: EvaIcons.wifi,
-                  label: "Services",
-                  children: [
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.options2,
-                      icon: EvaIcons.options2Outline,
-                      label: "Admin Hosts",
-                    ),
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.options2,
-                      icon: EvaIcons.options2Outline,
-                      label: "Admin Services",
-                    ),
-                  ],
-                  totalNotif: 100,
-                ),
-                SelectionButtonData(
-                  activeIcon: EvaIcons.monitor,
-                  icon: EvaIcons.monitorOutline,
-                  label: "Monitoring",
-                  children: [
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.barChart,
-                      icon: EvaIcons.barChart,
-                      label: "Services Status",
-                    ),
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.layers,
-                      icon: EvaIcons.layersOutline,
-                      label: "Logs",
-                    ),
-                  ],
-                  // totalNotif: 20,
-                ),
-                SelectionButtonData(
-                  activeIcon: EvaIcons.settings,
-                  icon: EvaIcons.settingsOutline,
-                  label: "Admin",
-                  children: [
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.person,
-                      icon: EvaIcons.personOutline,
-                      label: "Users",
-                    ),
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.shield,
-                      icon: EvaIcons.shieldOutline,
-                      label: "Roles",
-                    ),
-                    SelectionButtonData(
-                      activeIcon: EvaIcons.options2,
-                      icon: EvaIcons.options2Outline,
-                      label: "Settings",
-                    ),
-                  ],
-                ),
-              ],
-              onSelected: (index, value) {
-                handleNavigation(value.label);
-                onItemSelected?.call();
-              },
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: AuthUserProfile(),
             ),
-          ),
-          Divider(
-            indent: 20,
-            thickness: 1,
-            endIndent: 20,
-            height: 60,
-            color: AppColors.primaryLight.withValues(alpha: 0.3), // Lighter divider for dark background
-          ),
-          const SizedBox(height: 10),
-          Center(
-            child: Image.network(
-              '/icons/LogoGuard.png', // Ruta para web
-              width: 300, // Ajusta el tamaño según sea necesario
-              height: 300,
-              errorBuilder: (context, error, stack) => const SizedBox.shrink(),
-            ),
-          ),
-          const SizedBox(height: kSpacing),
-          Padding(
-            padding: const EdgeInsets.all(kSpacing),
-            child: Text(
-              "2025 Monitor license",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textLight, // Light text on dark background
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: SelectionButton(
+                data: [
+                  SelectionButtonData(
+                    activeIcon: EvaIcons.home,
+                    icon: EvaIcons.homeOutline,
+                    label: "Home",
+                  ),
+                  SelectionButtonData(
+                    activeIcon: EvaIcons.wifi,
+                    icon: EvaIcons.wifi,
+                    label: "Services",
+                    children: [
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.options2,
+                        icon: EvaIcons.options2Outline,
+                        label: "Admin Hosts",
+                      ),
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.options2,
+                        icon: EvaIcons.options2Outline,
+                        label: "Admin Services",
+                      ),
+                    ],
+                    totalNotif: 100,
+                  ),
+                  SelectionButtonData(
+                    activeIcon: EvaIcons.monitor,
+                    icon: EvaIcons.monitorOutline,
+                    label: "Monitoring",
+                    children: [
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.barChart,
+                        icon: EvaIcons.barChart,
+                        label: "Services Status",
+                      ),
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.layers,
+                        icon: EvaIcons.layersOutline,
+                        label: "Logs",
+                      ),
+                    ],
+                    // totalNotif: 20,
+                  ),
+                  SelectionButtonData(
+                    activeIcon: EvaIcons.settings,
+                    icon: EvaIcons.settingsOutline,
+                    label: "Admin",
+                    children: [
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.person,
+                        icon: EvaIcons.personOutline,
+                        label: "Users",
+                      ),
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.shield,
+                        icon: EvaIcons.shieldOutline,
+                        label: "Roles",
+                      ),
+                      SelectionButtonData(
+                        activeIcon: EvaIcons.options2,
+                        icon: EvaIcons.options2Outline,
+                        label: "Settings",
+                      ),
+                    ],
+                  ),
+                ],
+                onSelected: (index, value) {
+                  handleNavigation(value.label);
+                  onItemSelected?.call();
+                },
               ),
             ),
-          ),
-        ],
+            Divider(
+              indent: 20,
+              thickness: 1,
+              endIndent: 20,
+              height: 60,
+              color: AppColors.primaryLight.withValues(alpha: 0.3), // Lighter divider for dark background
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: Image.network(
+                '/icons/LogoGuard.png', // Ruta para web
+                width: 300, // Ajusta el tamaño según sea necesario
+                height: 300,
+                errorBuilder: (context, error, stack) => const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(height: kSpacing),
+            Padding(
+              padding: const EdgeInsets.all(kSpacing),
+              child: Text(
+                "2025 Monitor license",
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textLight, // Light text on dark background
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

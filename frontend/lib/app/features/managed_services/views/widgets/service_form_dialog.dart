@@ -228,6 +228,37 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
     }
   }
 
+  Widget _buildResponsiveRow({
+    required List<Widget> children,
+    required bool isMobile,
+  }) {
+    if (isMobile) {
+      return Column(
+        children: children.map((child) {
+          if (child is Expanded) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: child.child,
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: child,
+          );
+        }).toList(),
+      );
+    } else {
+      final spacedChildren = <Widget>[];
+      for (var i = 0; i < children.length; i++) {
+        spacedChildren.add(children[i]);
+        if (i < children.length - 1) {
+          spacedChildren.add(const SizedBox(width: 12));
+        }
+      }
+      return Row(children: spacedChildren);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ManagedServicesController>();
@@ -238,12 +269,16 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(AppConfig.padding * 2),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+
+                return Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                   Row(
                     children: [
                       Text(
@@ -263,24 +298,28 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                   _buildSectionTitle(context, 'Basic Information'),
                   const SizedBox(height: 16),
 
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _serviceIdController,
                           enabled: false,
                           decoration: InputDecoration(
-                            labelText: isEditing ? 'Service ID' : 'Service ID (Auto-generated)',
+                            labelText: isEditing
+                                ? 'Service ID'
+                                : 'Service ID (Auto-generated)',
                             border: const OutlineInputBorder(),
                             prefixIcon: const Icon(Icons.fingerprint),
-                            helperText: isEditing ? null : 'Generated from service name',
+                            helperText:
+                                isEditing ? null : 'Generated from service name',
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Obx(() => DropdownButtonFormField<String>(
                               value: _selectedHostId,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Host *',
                                 border: OutlineInputBorder(),
@@ -289,7 +328,10 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                               items: controller.availableHosts
                                   .map((host) => DropdownMenuItem(
                                         value: host.hostId,
-                                        child: Text('${host.hostname} (${host.hostId})'),
+                                        child: Text(
+                                          '${host.hostname} (${host.hostId})',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ))
                                   .toList(),
                               onChanged: (value) {
@@ -309,7 +351,8 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: CustomTextField(
@@ -324,37 +367,39 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                              value: _selectedServiceType,
-                              decoration: const InputDecoration(
-                                labelText: 'Service Type *',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.category),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: 'mysql', child: Text('MySQL')),
-                                DropdownMenuItem(value: 'nginx', child: Text('Nginx')),
-                                DropdownMenuItem(value: 'apache', child: Text('Apache')),
-                                DropdownMenuItem(value: 'postgresql', child: Text('PostgreSQL')),
-                                DropdownMenuItem(value: 'mongodb', child: Text('MongoDB')),
-                                DropdownMenuItem(value: 'redis', child: Text('Redis')),
-                                DropdownMenuItem(value: 'docker', child: Text('Docker')),
-                                DropdownMenuItem(value: 'ssh', child: Text('SSH')),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedServiceType = value;
-                                });
-                              },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Service Type is required';
-                                }
-                                return null;
-                              },
-                            ),
+                          value: _selectedServiceType,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Service Type *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.category),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'mysql', child: Text('MySQL')),
+                            DropdownMenuItem(value: 'nginx', child: Text('Nginx')),
+                            DropdownMenuItem(value: 'apache', child: Text('Apache')),
+                            DropdownMenuItem(
+                                value: 'postgresql', child: Text('PostgreSQL')),
+                            DropdownMenuItem(
+                                value: 'mongodb', child: Text('MongoDB')),
+                            DropdownMenuItem(value: 'redis', child: Text('Redis')),
+                            DropdownMenuItem(value: 'docker', child: Text('Docker')),
+                            DropdownMenuItem(value: 'ssh', child: Text('SSH')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedServiceType = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Service Type is required';
+                            }
+                            return null;
+                          },
+                        ),
                       ),
                     ],
                   ),
@@ -416,7 +461,8 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                   ),
                   const SizedBox(height: 16),
 
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: TextFormField(
@@ -427,10 +473,11 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.timer),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _timeoutSecController,
@@ -440,14 +487,17 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.hourglass_empty),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: TextFormField(
@@ -458,10 +508,11 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.replay),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _retryDelaySecController,
@@ -471,7 +522,9 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.schedule),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
                     ],
@@ -527,7 +580,8 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                     ),
                   const SizedBox(height: 16),
 
-                  Row(
+                  _buildResponsiveRow(
+                    isMobile: isMobile,
                     children: [
                       Expanded(
                         child: TextFormField(
@@ -538,10 +592,11 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.repeat),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _recoveryCooldownSecController,
@@ -551,7 +606,9 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                             prefixIcon: Icon(Icons.snooze),
                           ),
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ],
                         ),
                       ),
                     ],
@@ -658,18 +715,25 @@ class _ServiceFormDialogState extends State<ServiceFormDialog> {
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                        ),
                         child: const Text('Cancel'),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       CustomButton(
-                        text: isEditing ? 'Update Service' : 'Create Service',
+                        text: isEditing ? 'Update' : 'Create',
                         onPressed: _submit,
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
+            );
+          },
+        ),
           ),
         ),
       ),

@@ -3,7 +3,7 @@ class AppConfig {
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  static const String baseUrl = 'http://localhost:8000/api/v1';
+  static const String baseUrl = 'http://192.168.3.93:8000/api/v1';
   static const Duration requestTimeout = Duration(seconds: 30);
 
   // Storage Keys

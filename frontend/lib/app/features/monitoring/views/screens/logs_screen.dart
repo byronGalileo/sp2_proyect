@@ -8,7 +8,6 @@ import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/logs_controller.dart';
-import '../../../../models/log.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -33,6 +32,7 @@ class _LogsScreenState extends State<LogsScreen> {
   @override
   Widget build(BuildContext context) {
     return BaseScreenWrapper(
+      showMobileHeader: false,
       child: ResponsiveBuilder(
         mobileBuilder: (context, constraints) {
           return _buildMobileLayout(context, controller);
@@ -53,7 +53,6 @@ class _LogsScreenState extends State<LogsScreen> {
         _buildHeader(context, controller, showMenuButton: true),
         _buildFiltersBar(context, controller, isCompact: true),
         Expanded(child: _buildLogsContent(context, controller)),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -61,10 +60,9 @@ class _LogsScreenState extends State<LogsScreen> {
   Widget _buildTabletLayout(BuildContext context, LogsController controller) {
     return Column(
       children: [
-        _buildHeader(context, controller),
+        _buildHeader(context, controller, showMenuButton: true),
         _buildFiltersBar(context, controller),
         Expanded(child: _buildLogsContent(context, controller)),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -75,7 +73,6 @@ class _LogsScreenState extends State<LogsScreen> {
         _buildHeader(context, controller),
         _buildFiltersBar(context, controller),
         Expanded(child: _buildLogsContent(context, controller)),
-        _buildPagination(context, controller),
       ],
     );
   }
@@ -144,7 +141,7 @@ class _LogsScreenState extends State<LogsScreen> {
   Widget _buildFiltersBar(BuildContext context, LogsController controller,
       {bool isCompact = false}) {
     return Container(
-      padding: const EdgeInsets.all(AppConfig.padding),
+      padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.primaryDark.withOpacity(0.5),
       ),
@@ -227,8 +224,10 @@ class _LogsScreenState extends State<LogsScreen> {
           value: controller.selectedServiceId.value.isEmpty
               ? null
               : controller.selectedServiceId.value,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Service',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.activity, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -236,12 +235,20 @@ class _LogsScreenState extends State<LogsScreen> {
           items: [
             const DropdownMenuItem<String>(
               value: '',
-              child: Text('All Services', style: TextStyle(color: AppColors.textOnPrimary)),
+              child: Text(
+                'All Services',
+                style: TextStyle(color: AppColors.textOnPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             ...controller.availableServices.map((service) {
               return DropdownMenuItem<String>(
                 value: service.serviceId,
-                child: Text(service.displayName ?? service.serviceName, style: const TextStyle(color: AppColors.textOnPrimary)),
+                child: Text(
+                  service.displayName ?? service.serviceName,
+                  style: const TextStyle(color: AppColors.textOnPrimary),
+                  overflow: TextOverflow.ellipsis,
+                ),
               );
             }),
           ],
@@ -264,8 +271,10 @@ class _LogsScreenState extends State<LogsScreen> {
           style: const TextStyle(color: AppColors.textOnPrimary),
           iconEnabledColor: AppColors.textLight,
           value: controller.selectedLogLevel.value,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Level',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.alertCircle, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -273,7 +282,11 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.logLevels.map((level) {
             return DropdownMenuItem<String>(
               value: level,
-              child: Text(level, style: const TextStyle(color: AppColors.textOnPrimary)),
+              child: Text(
+                level,
+                style: const TextStyle(color: AppColors.textOnPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -290,8 +303,10 @@ class _LogsScreenState extends State<LogsScreen> {
           style: const TextStyle(color: AppColors.textOnPrimary),
           iconEnabledColor: AppColors.textLight,
           value: controller.selectedHours.value,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Time Range',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.clock, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -299,7 +314,11 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.timeRanges.map((hours) {
             return DropdownMenuItem<int>(
               value: hours,
-              child: Text(controller.getTimeRangeLabel(hours), style: const TextStyle(color: AppColors.textOnPrimary)),
+              child: Text(
+                controller.getTimeRangeLabel(hours),
+                style: const TextStyle(color: AppColors.textOnPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -316,8 +335,10 @@ class _LogsScreenState extends State<LogsScreen> {
           style: const TextStyle(color: AppColors.textOnPrimary),
           iconEnabledColor: AppColors.textLight,
           value: controller.selectedLimit.value,
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Fetch Limit',
+            floatingLabelBehavior: FloatingLabelBehavior.always,
             prefixIcon: Icon(EvaIcons.download, size: 20),
             border: OutlineInputBorder(),
             isDense: true,
@@ -325,7 +346,11 @@ class _LogsScreenState extends State<LogsScreen> {
           items: controller.limitOptions.map((limit) {
             return DropdownMenuItem<int>(
               value: limit,
-              child: Text('$limit logs', style: const TextStyle(color: AppColors.textOnPrimary)),
+              child: Text(
+                '$limit logs',
+                style: const TextStyle(color: AppColors.textOnPrimary),
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -416,75 +441,81 @@ class _LogsScreenState extends State<LogsScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConfig.borderRadius),
         ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStateProperty.all(
-              Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            ),
-            columnSpacing: 24,
-            columns: const [
-              DataColumn(label: Text('Timestamp')),
-              DataColumn(label: Text('Level')),
-              DataColumn(label: Text('Service')),
-              DataColumn(label: Text('Host')),
-              DataColumn(label: Text('Message')),
-              DataColumn(label: Text('Type')),
-              DataColumn(label: Text('Status')),
-            ],
-            rows: controller.logs.map((log) {
-              return DataRow(
-                cells: [
-                  DataCell(_buildTimestampCell(log.timestamp)),
-                  DataCell(_buildLevelBadge(log.logLevel)),
-                  DataCell(
-                    Text(
-                      log.serviceName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                    ),
-                  ),
-                  DataCell(Text(log.host ?? 'N/A')),
-                  DataCell(
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Tooltip(
-                        message: log.message,
-                        child: Text(
-                          log.message,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(
+                  Theme.of(context).primaryColor.withOpacity(0.1),
+                ),
+                columnSpacing: 24,
+                columns: const [
+                  DataColumn(label: Text('Timestamp')),
+                  DataColumn(label: Text('Level')),
+                  DataColumn(label: Text('Service')),
+                  DataColumn(label: Text('Host')),
+                  DataColumn(label: Text('Message')),
+                  DataColumn(label: Text('Type')),
+                  DataColumn(label: Text('Status')),
+                ],
+                rows: controller.logs.map((log) {
+                  return DataRow(
+                    cells: [
+                      DataCell(_buildTimestampCell(log.timestamp)),
+                      DataCell(_buildLevelBadge(log.logLevel)),
+                      DataCell(
+                        Text(
+                          log.serviceName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                         ),
                       ),
-                    ),
-                  ),
-                  DataCell(
-                    log.serviceType != null && log.serviceType != 'unknown'
-                        ? Chip(
-                            backgroundColor: AppColors.primaryBase.withOpacity(0.1),
-                            label: Text(
-                              log.serviceType!,
-                              style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
+                      DataCell(Text(log.host ?? 'N/A')),
+                      DataCell(
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400),
+                          child: Tooltip(
+                            message: log.message,
+                            child: Text(
+                              log.message,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          )
-                        : const Text('Unknown'),
-                  ),
-                  DataCell(
-                    Tooltip(
-                      message: log.sentToUser ? 'Sent to user' : 'Not sent',
-                      child: Icon(
-                        log.sentToUser ? EvaIcons.checkmarkCircle2 : EvaIcons.clockOutline,
-                        size: 20,
-                        color: log.sentToUser ? AppColors.success : AppColors.warning,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
+                      DataCell(
+                        log.serviceType != null && log.serviceType != 'unknown'
+                            ? Chip(
+                                backgroundColor: AppColors.primaryBase.withOpacity(0.1),
+                                label: Text(
+                                  log.serviceType!,
+                                  style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              )
+                            : const Text('Unknown'),
+                      ),
+                      DataCell(
+                        Tooltip(
+                          message: log.sentToUser ? 'Sent to user' : 'Not sent',
+                          child: Icon(
+                            log.sentToUser ? EvaIcons.checkmarkCircle2 : EvaIcons.clockOutline,
+                            size: 20,
+                            color: log.sentToUser ? AppColors.success : AppColors.warning,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+            _buildPagination(context, controller),
+          ],
         ),
       ),
     );
@@ -548,7 +579,7 @@ class _LogsScreenState extends State<LogsScreen> {
       if (controller.logs.isEmpty) return const SizedBox.shrink();
 
       return Container(
-        padding: const EdgeInsets.all(AppConfig.padding),
+        padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.primaryDark.withOpacity(0.5),
         ),

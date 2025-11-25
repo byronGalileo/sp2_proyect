@@ -22,6 +22,10 @@ class ServicesController extends GetxController {
   final RxString filterLevel = 'All'.obs;
   final RxString filterStatus = 'All'.obs;
 
+  // Pagination state
+  final RxInt currentPage = 0.obs;
+  final RxInt pageSize = 50.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -40,6 +44,9 @@ class ServicesController extends GetxController {
       services.value = response.services;
       totalServices.value = response.totalServices;
       lastUpdated.value = response.lastUpdated;
+      
+      // Reset pagination when data reloads
+      currentPage.value = 0;
     } catch (e) {
       errorMessage.value = e.toString();
       Get.snackbar(
@@ -75,14 +82,14 @@ class ServicesController extends GetxController {
     filterStatus.value = status;
   }
 
-  /// Get filtered services based on current filters
+  /// Get filtered services
   List<Service> get filteredServices {
-    var filtered = services.toList();
+    var result = services.toList();
 
     // Apply search filter
     if (searchQuery.value.isNotEmpty) {
-      filtered = filtered.where((service) {
-        final query = searchQuery.value.toLowerCase();
+      final query = searchQuery.value.toLowerCase();
+      result = result.where((service) {
         return service.id.toLowerCase().contains(query) ||
             (service.host?.toLowerCase().contains(query) ?? false) ||
             (service.serviceType?.toLowerCase().contains(query) ?? false);
@@ -91,19 +98,50 @@ class ServicesController extends GetxController {
 
     // Apply level filter
     if (filterLevel.value != 'All') {
-      filtered = filtered.where((service) {
+      result = result.where((service) {
         return service.latestLevel == filterLevel.value;
       }).toList();
     }
 
     // Apply status filter
     if (filterStatus.value != 'All') {
-      filtered = filtered.where((service) {
+      result = result.where((service) {
         return service.latestStatus == filterStatus.value;
       }).toList();
     }
 
-    return filtered;
+    return result;
+  }
+
+  /// Get paginated services from filtered results
+  List<Service> get paginatedServices {
+    final filtered = filteredServices;
+    final startIndex = currentPage.value * pageSize.value;
+    if (startIndex >= filtered.length) return [];
+    
+    final endIndex = (startIndex + pageSize.value).clamp(0, filtered.length);
+    return filtered.sublist(startIndex, endIndex);
+  }
+
+  // Pagination computed properties
+  int get totalItems => filteredServices.length;
+  int get totalPages => (totalItems / pageSize.value).ceil();
+  int get currentPageNumber => currentPage.value + 1;
+  bool get hasMore => currentPageNumber < totalPages;
+  bool get hasPrevious => currentPage.value > 0;
+
+  /// Load next page
+  void loadNextPage() {
+    if (hasMore) {
+      currentPage.value++;
+    }
+  }
+
+  /// Load previous page
+  void loadPreviousPage() {
+    if (hasPrevious) {
+      currentPage.value--;
+    }
   }
 
   /// Get unique log levels from services
