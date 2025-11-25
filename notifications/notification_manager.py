@@ -7,10 +7,11 @@ from .models import (
     NotificationChannel,
     NotificationStatus,
     NotificationHistory,
-    ServiceNotificationConfig
+    ServiceNotificationConfig,
+    SMSProvider
 )
 from .notification_operations import notification_operations
-from .aws_sns_service import AWSSNSService
+from .providers import SMSProviderType, get_sms_provider
 
 
 logger = logging.getLogger(__name__)
@@ -19,36 +20,15 @@ logger = logging.getLogger(__name__)
 class NotificationManager:
     """Manages notification sending across multiple channels"""
 
-    def __init__(
-        self,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_region: Optional[str] = None
-    ):
-        """
-        Initialize notification manager
-
-        Args:
-            aws_access_key_id: AWS access key (optional, will use env var)
-            aws_secret_access_key: AWS secret key (optional, will use env var)
-            aws_region: AWS region (optional, will use env var)
-        """
-        # Initialize AWS SNS service
-        self.sms_service = AWSSNSService(
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=aws_region
-        )
-
-        # Check if SMS service is available
-        if self.sms_service.is_available():
-            logger.info("AWS SNS SMS service initialized successfully")
-        else:
-            error = self.sms_service.get_initialization_error()
-            logger.warning(f"AWS SNS SMS service not available: {error}")
+    def __init__(self):
+        """Initialize notification manager"""
+        # Initialize SMS providers (will be created on demand via factory)
+        self._sms_providers = {}
 
         # Ensure database indexes
         notification_operations.ensure_indexes()
+
+        logger.info("Notification manager initialized")
 
     def send_service_notification(
         self,
@@ -152,6 +132,7 @@ class NotificationManager:
                     channel=channel,
                     contact=contact,
                     message=message,
+                    sms_provider=config.sms_provider,
                     metadata=metadata
                 )
 
@@ -177,6 +158,7 @@ class NotificationManager:
         channel: NotificationChannel,
         contact: Any,
         message: str,
+        sms_provider: SMSProvider = SMSProvider.AWS_SNS,
         metadata: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Send a single notification via specified channel"""
@@ -205,7 +187,7 @@ class NotificationManager:
 
         # Send via appropriate channel
         if channel == NotificationChannel.SMS:
-            result = self._send_sms(contact, message)
+            result = self._send_sms(contact, message, sms_provider)
         elif channel == NotificationChannel.EMAIL:
             result = self._send_email(contact, message)
         elif channel == NotificationChannel.PUSH:
@@ -230,21 +212,46 @@ class NotificationManager:
             'metadata': result.get('metadata', {})
         }
 
-    def _send_sms(self, contact: Any, message: str) -> Dict[str, Any]:
-        """Send SMS notification"""
+    def _get_sms_provider(self, provider_type: SMSProvider):
+        """Get SMS provider instance"""
+        # Convert SMSProvider enum to SMSProviderType
+        if provider_type == SMSProvider.AWS_SNS:
+            sms_provider_type = SMSProviderType.AWS_SNS
+        elif provider_type == SMSProvider.TWILIO:
+            sms_provider_type = SMSProviderType.TWILIO
+        else:
+            return None
+
+        # Get cached provider or create new one
+        if provider_type not in self._sms_providers:
+            self._sms_providers[provider_type] = get_sms_provider(sms_provider_type, use_cache=True)
+
+        return self._sms_providers[provider_type]
+
+    def _send_sms(self, contact: Any, message: str, provider_type: SMSProvider = SMSProvider.AWS_SNS) -> Dict[str, Any]:
+        """Send SMS notification using specified provider"""
         if not contact.phone:
             return {
                 'success': False,
                 'error': 'No phone number configured for contact'
             }
 
-        if not self.sms_service.is_available():
+        # Get SMS provider
+        sms_provider = self._get_sms_provider(provider_type)
+
+        if not sms_provider:
             return {
                 'success': False,
-                'error': f'SMS service not available: {self.sms_service.get_initialization_error()}'
+                'error': f'SMS provider {provider_type.value} not available'
             }
 
-        return self.sms_service.send_sms(contact.phone, message)
+        if not sms_provider.is_available():
+            return {
+                'success': False,
+                'error': f'{sms_provider.get_provider_name()} not available: {sms_provider.get_initialization_error()}'
+            }
+
+        return sms_provider.send_sms(contact.phone, message)
 
     def _send_email(self, contact: Any, message: str) -> Dict[str, Any]:
         """Send email notification (placeholder)"""
@@ -275,25 +282,36 @@ class NotificationManager:
     def send_test_notification(
         self,
         phone_number: str,
-        message: str = "Test notification from Service Monitor"
+        message: str = "Test notification from Service Monitor",
+        provider: SMSProvider = SMSProvider.AWS_SNS
     ) -> Dict[str, Any]:
         """Send a test SMS notification"""
-        if not self.sms_service.is_available():
+        sms_provider = self._get_sms_provider(provider)
+
+        if not sms_provider:
             return {
                 'success': False,
-                'error': f'SMS service not available: {self.sms_service.get_initialization_error()}'
+                'error': f'SMS provider {provider.value} not available'
             }
 
-        return self.sms_service.send_sms(phone_number, message)
+        if not sms_provider.is_available():
+            return {
+                'success': False,
+                'error': f'{sms_provider.get_provider_name()} not available: {sms_provider.get_initialization_error()}'
+            }
+
+        return sms_provider.send_sms(phone_number, message)
 
     def get_service_status(self) -> Dict[str, Any]:
         """Get status of notification services"""
+        # Check both SMS providers
+        aws_sns_provider = self._get_sms_provider(SMSProvider.AWS_SNS)
+        twilio_provider = self._get_sms_provider(SMSProvider.TWILIO)
+
         return {
-            'sms': {
-                'provider': 'aws_sns',
-                'available': self.sms_service.is_available(),
-                'error': self.sms_service.get_initialization_error(),
-                'region': self.sms_service.region_name
+            'sms_providers': {
+                'aws_sns': aws_sns_provider.get_provider_info() if aws_sns_provider else {'available': False, 'error': 'Not initialized'},
+                'twilio': twilio_provider.get_provider_info() if twilio_provider else {'available': False, 'error': 'Not initialized'}
             },
             'email': {
                 'provider': 'not_implemented',

@@ -22,18 +22,20 @@ class NotificationOperations:
 
     def __init__(self):
         self.connection = mongo_connection
-        self.config_collection = "notification_configs"
-        self.history_collection = "notification_history"
+        self.config_collection_name = "notification_configs"
+        self.history_collection_name = "notification_history"
 
     def _get_config_collection(self):
         """Get notification config collection"""
-        db = self.connection.get_database()
-        return db[self.config_collection]
+        if self.connection.database is None:
+            return None
+        return self.connection.database[self.config_collection_name]
 
     def _get_history_collection(self):
         """Get notification history collection"""
-        db = self.connection.get_database()
-        return db[self.history_collection]
+        if self.connection.database is None:
+            return None
+        return self.connection.database[self.history_collection_name]
 
     def ensure_indexes(self):
         """Create indexes for notification collections"""
@@ -64,6 +66,9 @@ class NotificationOperations:
         """Save or update notification configuration"""
         try:
             collection = self._get_config_collection()
+            if collection is None:
+                print("Notification config collection not available")
+                return False
             result = collection.update_one(
                 {'service_key': f"{config.host}:{config.service_name}"},
                 {'$set': config.to_document()},
@@ -78,6 +83,9 @@ class NotificationOperations:
         """Get notification configuration for a service"""
         try:
             collection = self._get_config_collection()
+            if collection is None:
+                print("Notification config collection not available")
+                return None
             doc = collection.find_one({'service_key': f"{host}:{service_name}"})
             if doc:
                 return ServiceNotificationConfig.from_document(doc)
@@ -90,6 +98,9 @@ class NotificationOperations:
         """Get all notification configurations"""
         try:
             collection = self._get_config_collection()
+            if collection is None:
+                print("Notification config collection not available")
+                return []
             query = {'enabled': True} if enabled_only else {}
             docs = collection.find(query)
             return [ServiceNotificationConfig.from_document(doc) for doc in docs]
@@ -101,6 +112,9 @@ class NotificationOperations:
         """Delete notification configuration"""
         try:
             collection = self._get_config_collection()
+            if collection is None:
+                print("Notification config collection not available")
+                return False
             result = collection.delete_one({'service_key': f"{host}:{service_name}"})
             return result.deleted_count > 0
         except Exception as e:
@@ -111,6 +125,9 @@ class NotificationOperations:
         """Enable or disable notifications for a service"""
         try:
             collection = self._get_config_collection()
+            if collection is None:
+                print("Notification config collection not available")
+                return False
             result = collection.update_one(
                 {'service_key': f"{host}:{service_name}"},
                 {'$set': {'enabled': enabled, 'updated_at': datetime.utcnow()}}
@@ -125,6 +142,9 @@ class NotificationOperations:
         """Save notification to history"""
         try:
             collection = self._get_history_collection()
+            if collection is None:
+                print("Notification history collection not available")
+                return False
             result = collection.insert_one(notification.to_document())
             return result.acknowledged
         except Exception as e:
@@ -141,6 +161,9 @@ class NotificationOperations:
         try:
             from bson import ObjectId
             collection = self._get_history_collection()
+            if collection is None:
+                print("Notification history collection not available")
+                return False
             update_doc = {
                 'status': status.value,
             }
@@ -170,6 +193,9 @@ class NotificationOperations:
         """Get notification history with filters"""
         try:
             collection = self._get_history_collection()
+            if collection is None:
+                print("Notification history collection not available")
+                return []
 
             # Build query
             query = {}
@@ -211,6 +237,9 @@ class NotificationOperations:
         """Check if a similar notification was sent recently (for cooldown)"""
         try:
             collection = self._get_history_collection()
+            if collection is None:
+                print("Notification history collection not available")
+                return None
 
             cutoff_time = datetime.utcnow() - timedelta(minutes=minutes)
             query = {
@@ -233,6 +262,10 @@ class NotificationOperations:
         """Get notification statistics"""
         try:
             collection = self._get_history_collection()
+            if collection is None:
+                print("Notification history collection not available")
+                return {'total': 0, 'by_status': {}, 'by_channel': {}, 'period_hours': hours}
+
             start_time = datetime.utcnow() - timedelta(hours=hours)
 
             pipeline = [
@@ -268,7 +301,7 @@ class NotificationOperations:
             return stats
         except Exception as e:
             print(f"Error getting notification stats: {e}")
-            return {'total': 0, 'by_status': {}, 'by_channel': {}}
+            return {'total': 0, 'by_status': {}, 'by_channel': {}, 'period_hours': hours}
 
 
 # Global instance

@@ -74,6 +74,12 @@ class NotificationContact:
         )
 
 
+class SMSProvider(Enum):
+    """SMS provider types"""
+    AWS_SNS = "aws_sns"
+    TWILIO = "twilio"
+
+
 class ServiceNotificationConfig:
     """Notification configuration for a service"""
 
@@ -84,6 +90,7 @@ class ServiceNotificationConfig:
         contacts: List[NotificationContact],
         enabled: bool = True,
         cooldown_minutes: int = 5,
+        sms_provider: SMSProvider = SMSProvider.AWS_SNS,
         metadata: Optional[Dict[str, Any]] = None
     ):
         self.service_name = service_name
@@ -91,6 +98,7 @@ class ServiceNotificationConfig:
         self.contacts = contacts
         self.enabled = enabled
         self.cooldown_minutes = cooldown_minutes
+        self.sms_provider = sms_provider
         self.metadata = metadata or {}
 
     def to_document(self) -> Dict[str, Any]:
@@ -101,6 +109,7 @@ class ServiceNotificationConfig:
             'contacts': [contact.to_dict() for contact in self.contacts],
             'enabled': self.enabled,
             'cooldown_minutes': self.cooldown_minutes,
+            'sms_provider': self.sms_provider.value,
             'metadata': self.metadata,
             'service_key': f"{self.host}:{self.service_name}",
             'updated_at': datetime.utcnow()
@@ -109,12 +118,20 @@ class ServiceNotificationConfig:
     @classmethod
     def from_document(cls, doc: Dict[str, Any]) -> 'ServiceNotificationConfig':
         """Create from MongoDB document"""
+        # Handle sms_provider with default fallback
+        sms_provider_value = doc.get('sms_provider', 'aws_sns')
+        try:
+            sms_provider = SMSProvider(sms_provider_value)
+        except ValueError:
+            sms_provider = SMSProvider.AWS_SNS
+
         return cls(
             service_name=doc['service_name'],
             host=doc['host'],
             contacts=[NotificationContact.from_dict(c) for c in doc.get('contacts', [])],
             enabled=doc.get('enabled', True),
             cooldown_minutes=doc.get('cooldown_minutes', 5),
+            sms_provider=sms_provider,
             metadata=doc.get('metadata', {})
         )
 

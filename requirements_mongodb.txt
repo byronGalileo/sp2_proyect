@@ -22,3 +22,6 @@ psutil>=5.9.0
 # AWS SDK for notifications (SNS for SMS, SES for email)
 boto3>=1.28.0
 botocore>=1.31.0
+
+# Twilio SDK for SMS notifications
+twilio>=8.10.0

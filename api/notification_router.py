@@ -25,6 +25,7 @@ from notifications import (
     NotificationStatus,
     NotificationContact,
     ServiceNotificationConfig,
+    SMSProvider,
     create_notification_message
 )
 
@@ -52,6 +53,7 @@ class NotificationConfigRequest(BaseModel):
     contacts: List[ContactModel] = Field(..., description="List of contacts to notify")
     enabled: bool = Field(True, description="Whether notifications are enabled")
     cooldown_minutes: int = Field(5, ge=1, le=60, description="Cooldown period between notifications (1-60 minutes)")
+    sms_provider: str = Field(default="aws_sns", description="SMS provider to use (aws_sns or twilio)")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
@@ -66,6 +68,7 @@ class SendNotificationRequest(BaseModel):
 class TestSMSRequest(BaseModel):
     phone_number: str = Field(..., description="Phone number in E.164 format (e.g., +50212345678)")
     message: str = Field(default="Test notification from Service Monitor", description="Test message")
+    provider: str = Field(default="aws_sns", description="SMS provider to use (aws_sns or twilio)")
 
 
 class ApiResponse(BaseModel):
@@ -141,6 +144,15 @@ async def get_notification_config(
 async def create_notification_config(request: NotificationConfigRequest):
     """Create or update notification configuration for a service"""
     try:
+        # Validate SMS provider
+        try:
+            sms_provider = SMSProvider(request.sms_provider)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid SMS provider: {request.sms_provider}. Valid options: aws_sns, twilio"
+            )
+
         # Convert request to domain model
         contacts = []
         for contact_data in request.contacts:
@@ -160,6 +172,7 @@ async def create_notification_config(request: NotificationConfigRequest):
             contacts=contacts,
             enabled=request.enabled,
             cooldown_minutes=request.cooldown_minutes,
+            sms_provider=sms_provider,
             metadata=request.metadata
         )
 
@@ -296,9 +309,19 @@ async def send_notification(request: SendNotificationRequest):
 async def test_sms_notification(request: TestSMSRequest):
     """Send a test SMS notification"""
     try:
+        # Validate provider
+        try:
+            provider = SMSProvider(request.provider)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid SMS provider: {request.provider}. Valid options: aws_sns, twilio"
+            )
+
         result = notification_manager.send_test_notification(
             phone_number=request.phone_number,
-            message=request.message
+            message=request.message,
+            provider=provider
         )
 
         if not result['success']:
