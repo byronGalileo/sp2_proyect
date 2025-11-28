@@ -8,12 +8,14 @@ class ServiceTable extends StatelessWidget {
   final List<ManagedService> services;
   final Function(ManagedService) onEdit;
   final Function(ManagedService) onDelete;
+  final Function(ManagedService)? onNotification;
 
   const ServiceTable({
     super.key,
     required this.services,
     required this.onEdit,
     required this.onDelete,
+    this.onNotification,
   });
 
   @override
@@ -120,6 +122,12 @@ class ServiceTable extends StatelessWidget {
                               color: AppColors.error, size: 20),
                           onPressed: () => onDelete(service),
                           tooltip: 'Delete',
+                        ),
+                        IconButton(
+                          icon: const Icon(EvaIcons.bellOutline,
+                              size: 20, color: AppColors.textSecondary),
+                          onPressed: () => onNotification?.call(service),
+                          tooltip: 'Notifications',
                         ),
                       ],
                     ),

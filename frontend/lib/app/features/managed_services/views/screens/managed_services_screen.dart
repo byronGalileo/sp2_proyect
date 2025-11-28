@@ -12,6 +12,7 @@ import '../widgets/service_form_dialog.dart';
 import '../widgets/service_card.dart';
 import '../../../../features/monitoring/controllers/logs_controller.dart'; // Import LogsController for navigation
 import '../widgets/service_table.dart';
+import '../widgets/notification_config_dialog.dart';
 
 class ManagedServicesScreen extends StatefulWidget {
   const ManagedServicesScreen({super.key});
@@ -152,6 +153,8 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
                               Get.toNamed('/monitoring/logs',
                                   arguments: {'serviceName': s.serviceId});
                             },
+                            onNotification: (s) =>
+                                _showNotificationDialog(context, s),
                           );
                         },
                       ),
@@ -174,6 +177,8 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
                               _showServiceDialog(context, service: service),
                           onDelete: (service) =>
                               controller.deleteService(service.serviceId),
+                          onNotification: (service) =>
+                              _showNotificationDialog(context, service),
                         ),
                         const SizedBox(height: 16),
                         _buildPagination(context, controller),
@@ -228,6 +233,12 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 Obx(() {
+                  if (controller.isLoading.value && controller.summaryData.value == null) {
+                    return const Text(
+                      'Loading summary...',
+                      style: TextStyle(color: AppColors.textLight, fontSize: 12),
+                    );
+                  }
                   final summary = controller.summaryData.value;
                   if (summary != null) {
                     return Text(
@@ -661,6 +672,13 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
     showDialog(
       context: context,
       builder: (context) => ServiceFormDialog(service: service),
+    );
+  }
+
+  void _showNotificationDialog(BuildContext context, ManagedService service) {
+    showDialog(
+      context: context,
+      builder: (context) => NotificationConfigDialog(service: service),
     );
   }
 }

@@ -11,6 +11,7 @@ class ServiceCard extends StatelessWidget {
   final Function(ManagedService) onEdit;
   final Function(ManagedService) onDelete;
   final Function(ManagedService)? onViewLogs;
+  final Function(ManagedService)? onNotification;
 
   const ServiceCard({
     super.key,
@@ -18,6 +19,7 @@ class ServiceCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.onViewLogs,
+    this.onNotification,
   });
 
   // Helper to get status color, similar to _getStatusColor in ManagedServicesScreen
@@ -113,12 +115,25 @@ class ServiceCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    PopupMenuItem(
+                      value: 'notification',
+                      child: Row(
+                        children: [
+                          const Icon(EvaIcons.bellOutline,
+                              size: 20, color: AppColors.textSecondary),
+                          const SizedBox(width: 12),
+                          const Text('Notifications'),
+                        ],
+                      ),
+                    ),
                   ],
                   onSelected: (value) {
                     if (value == 'edit') {
                       onEdit(service);
                     } else if (value == 'delete') {
                       onDelete(service);
+                    } else if (value == 'notification') {
+                      onNotification?.call(service);
                     }
                   },
                 ),
