@@ -230,6 +230,225 @@ async def update_notification_config_status(
         raise HTTPException(status_code=500, detail=f"Failed to update notification status: {str(e)}")
 
 
+@router.patch("/configs/{service_name}/settings", response_model=ApiResponse)
+async def update_notification_config_settings(
+    service_name: str = Path(..., description="Service name"),
+    host: str = Query(..., description="Host name"),
+    sms_provider: Optional[str] = Query(None, description="SMS provider (aws_sns or twilio)"),
+    cooldown_minutes: Optional[int] = Query(None, ge=1, le=60, description="Cooldown period (1-60 minutes)")
+):
+    """Update notification configuration settings (provider, cooldown)"""
+    try:
+        # Get existing config
+        config = notification_operations.get_notification_config(service_name, host)
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No notification configuration found for {host}:{service_name}"
+            )
+
+        # Update fields if provided
+        if sms_provider:
+            try:
+                config.sms_provider = SMSProvider(sms_provider)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid SMS provider: {sms_provider}. Valid options: aws_sns, twilio"
+                )
+
+        if cooldown_minutes is not None:
+            config.cooldown_minutes = cooldown_minutes
+
+        # Save updated config
+        success = notification_operations.save_notification_config(config)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update notification configuration")
+
+        return ApiResponse(
+            success=True,
+            message=f"Settings updated for {host}:{service_name}",
+            data={
+                "service_name": service_name,
+                "host": host,
+                "sms_provider": config.sms_provider.value,
+                "cooldown_minutes": config.cooldown_minutes
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+
+@router.post("/configs/{service_name}/contacts", response_model=ApiResponse)
+async def add_contact_to_config(
+    service_name: str = Path(..., description="Service name"),
+    host: str = Query(..., description="Host name"),
+    contact: ContactModel = Body(..., description="Contact to add")
+):
+    """Add a new contact to notification configuration"""
+    try:
+        # Get existing config
+        config = notification_operations.get_notification_config(service_name, host)
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No notification configuration found for {host}:{service_name}"
+            )
+
+        # Check if contact with same name already exists
+        existing_names = [c.name for c in config.contacts]
+        if contact.name in existing_names:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Contact with name '{contact.name}' already exists"
+            )
+
+        # Create new contact
+        new_contact = NotificationContact(
+            name=contact.name,
+            phone=contact.phone,
+            email=contact.email,
+            enabled=contact.enabled,
+            channels=[NotificationChannel(ch) for ch in contact.channels],
+            notify_on=[NotificationEventType(ev) for ev in contact.notify_on]
+        )
+
+        # Add to config
+        config.contacts.append(new_contact)
+
+        # Save updated config
+        success = notification_operations.save_notification_config(config)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to add contact")
+
+        return ApiResponse(
+            success=True,
+            message=f"Contact '{contact.name}' added to {host}:{service_name}",
+            data={
+                "service_name": service_name,
+                "host": host,
+                "contact_name": contact.name,
+                "total_contacts": len(config.contacts)
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add contact: {str(e)}")
+
+
+@router.delete("/configs/{service_name}/contacts/{contact_name}", response_model=ApiResponse)
+async def remove_contact_from_config(
+    service_name: str = Path(..., description="Service name"),
+    contact_name: str = Path(..., description="Contact name to remove"),
+    host: str = Query(..., description="Host name")
+):
+    """Remove a contact from notification configuration"""
+    try:
+        # Get existing config
+        config = notification_operations.get_notification_config(service_name, host)
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No notification configuration found for {host}:{service_name}"
+            )
+
+        # Find and remove contact
+        original_count = len(config.contacts)
+        config.contacts = [c for c in config.contacts if c.name != contact_name]
+
+        if len(config.contacts) == original_count:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Contact '{contact_name}' not found in configuration"
+            )
+
+        # Save updated config
+        success = notification_operations.save_notification_config(config)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to remove contact")
+
+        return ApiResponse(
+            success=True,
+            message=f"Contact '{contact_name}' removed from {host}:{service_name}",
+            data={
+                "service_name": service_name,
+                "host": host,
+                "removed_contact": contact_name,
+                "remaining_contacts": len(config.contacts)
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to remove contact: {str(e)}")
+
+
+@router.put("/configs/{service_name}/contacts/{contact_name}", response_model=ApiResponse)
+async def update_contact_in_config(
+    service_name: str = Path(..., description="Service name"),
+    contact_name: str = Path(..., description="Contact name to update"),
+    host: str = Query(..., description="Host name"),
+    contact_update: ContactModel = Body(..., description="Updated contact data")
+):
+    """Update an existing contact in notification configuration"""
+    try:
+        # Get existing config
+        config = notification_operations.get_notification_config(service_name, host)
+        if not config:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No notification configuration found for {host}:{service_name}"
+            )
+
+        # Find contact to update
+        contact_found = False
+        for i, contact in enumerate(config.contacts):
+            if contact.name == contact_name:
+                # Update contact
+                config.contacts[i] = NotificationContact(
+                    name=contact_update.name,
+                    phone=contact_update.phone,
+                    email=contact_update.email,
+                    enabled=contact_update.enabled,
+                    channels=[NotificationChannel(ch) for ch in contact_update.channels],
+                    notify_on=[NotificationEventType(ev) for ev in contact_update.notify_on]
+                )
+                contact_found = True
+                break
+
+        if not contact_found:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Contact '{contact_name}' not found in configuration"
+            )
+
+        # Save updated config
+        success = notification_operations.save_notification_config(config)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update contact")
+
+        return ApiResponse(
+            success=True,
+            message=f"Contact '{contact_name}' updated in {host}:{service_name}",
+            data={
+                "service_name": service_name,
+                "host": host,
+                "updated_contact": contact_update.name
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update contact: {str(e)}")
+
+
 @router.delete("/configs/{service_name}", response_model=ApiResponse)
 async def delete_notification_config(
     service_name: str = Path(..., description="Service name"),

@@ -34,7 +34,8 @@ from .models import (
     NotificationStatus,
     NotificationContact,
     ServiceNotificationConfig,
-    NotificationHistory
+    NotificationHistory,
+    SMSProvider
 )
 
 from .notification_operations import notification_operations
@@ -52,6 +53,7 @@ __all__ = [
     'NotificationContact',
     'ServiceNotificationConfig',
     'NotificationHistory',
+    'SMSProvider',
     # Operations
     'notification_operations',
     # Services
