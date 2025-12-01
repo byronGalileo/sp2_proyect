@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../config/api_config.dart';
+import '../../config/app_config.dart';
 import '../../models/host.dart';
 import '../helpers/api_response_handler.dart';
 import '../exceptions/api_exception.dart';
+import 'storage_service.dart';
 
 class HostService {
   /// Get all hosts with optional filters
@@ -30,12 +31,20 @@ class HostService {
     }
 
     final uri = Uri.parse(
-      '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hosts}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.hosts}',
     ).replace(queryParameters: queryParams);
+
+
+
+    final token = await StorageService().getToken();
+    final headers = {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
 
     final response = await http.get(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
     );
 
     return ApiResponseHandler.handleResponse<HostListResponse>(
@@ -48,8 +57,12 @@ class HostService {
   /// Get a specific host by ID
   Future<HostResponse> getHostById(String hostId) async {
     final response = await http.get(
-      Uri.parse('${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${AppConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     print(response);
@@ -103,8 +116,12 @@ class HostService {
     });
 
     final response = await http.post(
-      Uri.parse('${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hosts}'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${AppConfig.monitoringBaseUrl}${ApiEndpoints.hosts}'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
       body: body,
     );
 
@@ -164,8 +181,12 @@ class HostService {
     if (status != null) body['status'] = status;
 
     final response = await http.put(
-      Uri.parse('${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId'),
-      headers: {'Content-Type': 'application/json'},
+      Uri.parse('${AppConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
       body: json.encode(body),
     );
 
@@ -186,12 +207,16 @@ class HostService {
     }
 
     final uri = Uri.parse(
-      '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.hosts}/$hostId',
     ).replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
 
     final response = await http.delete(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     ApiResponseHandler.handleEmptyResponse(
@@ -204,9 +229,13 @@ class HostService {
   Future<MetadataListResponse> getEnvironments() async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hostsEnvironments}',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.hostsEnvironments}',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse(
@@ -220,9 +249,13 @@ class HostService {
   Future<MetadataListResponse> getRegions() async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.hostsRegions}',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.hostsRegions}',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse(
@@ -236,9 +269,13 @@ class HostService {
   Future<Map<String, dynamic>> generateConfig(String hostId) async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.configGenerate}/$hostId',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.configGenerate}/$hostId',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     if (response.statusCode == 200) {
@@ -256,9 +293,13 @@ class HostService {
   Future<Map<String, dynamic>> startExecution(String configName) async {
     final response = await http.post(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStart}/$configName',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStart}/$configName',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
@@ -273,9 +314,13 @@ class HostService {
   Future<Map<String, dynamic>> stopExecution(String configName) async {
     final response = await http.post(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStop}/$configName',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStop}/$configName',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<Map<String, dynamic>>(
@@ -290,9 +335,13 @@ class HostService {
   Future<Map<String, dynamic>> getExecutionStatus(String configName) async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStatus}/$configName',
+        '${AppConfig.monitoringBaseUrl}${ApiEndpoints.monitoringStatus}/$configName',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<Map<String, dynamic>>(

@@ -1,17 +1,60 @@
 import 'package:dio/dio.dart';
-import '../../config/api_config.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import '../../config/app_config.dart';
+import '../../config/routes/app_pages.dart';
+import '../../config/themes/app_theme.dart';
 import '../../models/notification_config.dart';
 import '../exceptions/api_exception.dart';
+import 'storage_service.dart';
 
 class NotificationService {
   final Dio _dio;
 
   NotificationService()
       : _dio = Dio(BaseOptions(
-          baseUrl: ApiConfig.monitoringBaseUrl,
+          baseUrl: AppConfig.monitoringBaseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
-        ));
+        )) {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await StorageService().getToken();
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+      onError: (DioException e, handler) {
+        if (e.response?.statusCode == 401) {
+          StorageService().clearAuthData().then((_) {
+            Get.offAllNamed(Routes.login);
+            Get.snackbar(
+              'Session Expired',
+              'Please log in again',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.error.withOpacity(0.1),
+              colorText: AppColors.error,
+              margin: const EdgeInsets.all(16),
+            );
+          });
+        } else if (e.response?.statusCode == 403) {
+          if (Get.currentRoute != Routes.home) {
+            Get.offNamed(Routes.home);
+            Get.snackbar(
+              'Access Denied',
+              'You do not have permission to access this resource',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: AppColors.warning.withOpacity(0.1),
+              colorText: AppColors.warning,
+              margin: const EdgeInsets.all(16),
+            );
+          }
+        }
+        return handler.next(e);
+      },
+    ));
+  }
 
   Future<List<NotificationConfig>> getConfigs() async {
     try {

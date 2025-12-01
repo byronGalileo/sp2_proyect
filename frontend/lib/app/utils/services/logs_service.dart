@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/log.dart';
-import '../../config/api_config.dart';
+import '../../config/app_config.dart';
+import '../helpers/api_response_handler.dart';
+import 'storage_service.dart';
 
 class LogsService {
   Future<LogsResponse> getLogs({
@@ -25,26 +27,29 @@ class LogsService {
         queryParams['log_level'] = logLevel;
       }
 
-      final uri = Uri.parse('${ApiConfig.monitoringBaseUrl}${ApiEndpoints.logs}')
+      final uri = Uri.parse('${AppConfig.monitoringBaseUrl}${ApiEndpoints.logs}')
           .replace(queryParameters: queryParams);
+
+      final token = await StorageService().getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       ).timeout(
         const Duration(seconds: 30),
       );
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LogsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to load logs: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<LogsResponse>(
+        response,
+        parser: (json) => LogsResponse.fromJson(json),
+        operation: 'fetch logs',
+      );
     } catch (e) {
-      throw Exception('Error fetching logs: $e');
+      rethrow;
     }
   }
 }

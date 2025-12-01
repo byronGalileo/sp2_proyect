@@ -12,6 +12,7 @@ import '../widgets/host_card.dart';
 import '../../../managed_services/views/widgets/service_form_dialog.dart';
 import '../widgets/host_form_dialog.dart';
 import '../widgets/host_table.dart';
+import '../widgets/host_pagination_footer.dart';
 
 class HostsScreen extends StatelessWidget {
   const HostsScreen({super.key});
@@ -91,7 +92,7 @@ class HostsScreen extends StatelessWidget {
             if (isMobile) {
               return Column(
                 children: [
-                  _buildPagination(context, controller),
+                  HostPaginationFooter(controller: controller),
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: controller.refresh,
@@ -156,7 +157,7 @@ class HostsScreen extends StatelessWidget {
                           controller.generateConfig(host.hostId),
                       onStartExecution: (host) => controller.startExecution(host),
                       onStopExecution: (host) => controller.stopExecution(host),
-                      footer: _buildPagination(context, controller),
+                      controller: controller,
                     ),
                   ),
                 ),
@@ -482,45 +483,7 @@ class HostsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPagination(BuildContext context, HostsController controller) {
-    return Obx(() {
-      if (controller.hosts.isEmpty) return const SizedBox.shrink();
 
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding, vertical: 8), // Reduced vertical padding
-        decoration: BoxDecoration(
-          color: AppColors.primaryDark.withOpacity(0.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Page ${controller.currentPageNumber} of ${controller.totalPages}',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textLight),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, color: AppColors.textLight),
-                  onPressed: controller.hasPrevious
-                      ? controller.loadPreviousPage
-                      : null,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, color: AppColors.textLight),
-                  onPressed:
-                      controller.hasMore ? controller.loadNextPage : null,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
-  }
 
   void _showHostDialog(BuildContext context, {Host? host}) {
     showDialog(

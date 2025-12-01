@@ -1,5 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+
+import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import '../../config/routes/app_pages.dart';
+import '../../config/themes/app_theme.dart';
+import '../services/storage_service.dart';
 import '../exceptions/api_exception.dart';
 
 /// Utility class to handle API responses consistently across the app
@@ -52,6 +58,37 @@ class ApiResponseHandler {
     } catch (e) {
       // If we can't parse the error body, use the raw body
       details = response.body.isNotEmpty ? response.body : null;
+    }
+
+
+
+    // Handle specific status codes
+    if (response.statusCode == 401) {
+      // Unauthorized - Clear auth data and redirect to login
+      StorageService().clearAuthData().then((_) {
+        Get.offAllNamed(Routes.login);
+        Get.snackbar(
+          'Session Expired',
+          'Please log in again',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.error.withOpacity(0.1),
+          colorText: AppColors.error,
+          margin: const EdgeInsets.all(16),
+        );
+      });
+    } else if (response.statusCode == 403) {
+      // Forbidden - Redirect to home or show error
+      if (Get.currentRoute != Routes.home) {
+        Get.offNamed(Routes.home);
+        Get.snackbar(
+          'Access Denied',
+          'You do not have permission to access this resource',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppColors.warning.withOpacity(0.1),
+          colorText: AppColors.warning,
+          margin: const EdgeInsets.all(16),
+        );
+      }
     }
 
     final message =

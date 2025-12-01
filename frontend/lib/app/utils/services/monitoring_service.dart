@@ -2,31 +2,37 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../models/service.dart';
 import '../../models/log.dart';
-import '../../config/api_config.dart';
+import '../../config/app_config.dart';
+import '../helpers/api_response_handler.dart';
+import 'storage_service.dart';
 
 class MonitoringService {
   Future<ServicesResponse> getServices() async {
     try {
+      final token = await StorageService().getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
       final response = await http.get(
-        Uri.parse('${ApiConfig.monitoringBaseUrl}${ApiEndpoints.services}'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('${AppConfig.monitoringBaseUrl}${ApiEndpoints.services}'),
+        headers: headers,
       ).timeout(
         const Duration(seconds: 30),
       );
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return ServicesResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to load services: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<ServicesResponse>(
+        response,
+        parser: (json) => ServicesResponse.fromJson(json),
+        operation: 'fetch services',
+      );
     } catch (e) {
-      throw Exception('Error fetching services: $e');
+      rethrow;
     }
   }
 
+  /// Get unsent logs for a specific service
   /// Get unsent logs for a specific service
   Future<LogsResponse> getUnsentLogs({
     required String serviceName,
@@ -38,37 +44,45 @@ class MonitoringService {
         'limit': limit.toString(),
       };
 
-      final uri = Uri.parse('${ApiConfig.monitoringBaseUrl}/logs/unsent')
+      final uri = Uri.parse('${AppConfig.monitoringBaseUrl}/logs/unsent')
           .replace(queryParameters: queryParams);
+
+      final token = await StorageService().getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
 
       final response = await http.get(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       ).timeout(
         const Duration(seconds: 30),
       );
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return LogsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to load unsent logs: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<LogsResponse>(
+        response,
+        parser: (json) => LogsResponse.fromJson(json),
+        operation: 'fetch unsent logs',
+      );
     } catch (e) {
-      throw Exception('Error fetching unsent logs: $e');
+      rethrow;
     }
   }
 
   /// Mark logs as sent
+  /// Mark logs as sent
   Future<MarkLogsResponse> markLogsAsSent(List<String> logIds) async {
     try {
+      final token = await StorageService().getToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
       final response = await http.post(
-        Uri.parse('${ApiConfig.monitoringBaseUrl}/logs/mark-sent'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        Uri.parse('${AppConfig.monitoringBaseUrl}/logs/mark-sent'),
+        headers: headers,
         body: json.encode({
           'log_ids': logIds,
         }),
@@ -76,14 +90,13 @@ class MonitoringService {
         const Duration(seconds: 30),
       );
 
-      if (response.statusCode == 200) {
-        final jsonData = json.decode(response.body);
-        return MarkLogsResponse.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to mark logs as sent: ${response.statusCode}');
-      }
+      return ApiResponseHandler.handleResponse<MarkLogsResponse>(
+        response,
+        parser: (json) => MarkLogsResponse.fromJson(json),
+        operation: 'mark logs as sent',
+      );
     } catch (e) {
-      throw Exception('Error marking logs as sent: $e');
+      rethrow;
     }
   }
 }
