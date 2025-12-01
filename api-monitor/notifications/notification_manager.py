@@ -219,6 +219,10 @@ class NotificationManager:
             sms_provider_type = SMSProviderType.AWS_SNS
         elif provider_type == SMSProvider.TWILIO:
             sms_provider_type = SMSProviderType.TWILIO
+        elif provider_type == SMSProvider.WHATSAPP:
+            sms_provider_type = SMSProviderType.WHATSAPP
+        elif provider_type == SMSProvider.TELEGRAM:
+            sms_provider_type = SMSProviderType.TELEGRAM
         else:
             return None
 
@@ -311,7 +315,9 @@ class NotificationManager:
         return {
             'sms_providers': {
                 'aws_sns': aws_sns_provider.get_provider_info() if aws_sns_provider else {'available': False, 'error': 'Not initialized'},
-                'twilio': twilio_provider.get_provider_info() if twilio_provider else {'available': False, 'error': 'Not initialized'}
+                'twilio': twilio_provider.get_provider_info() if twilio_provider else {'available': False, 'error': 'Not initialized'},
+                'whatsapp': self._get_sms_provider(SMSProvider.WHATSAPP).get_provider_info() if self._get_sms_provider(SMSProvider.WHATSAPP) else {'available': False, 'error': 'Not initialized'},
+                'telegram': self._get_sms_provider(SMSProvider.TELEGRAM).get_provider_info() if self._get_sms_provider(SMSProvider.TELEGRAM) else {'available': False, 'error': 'Not initialized'}
             },
             'email': {
                 'provider': 'not_implemented',

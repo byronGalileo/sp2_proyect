@@ -4,6 +4,8 @@ from typing import Optional
 from .base_sms_provider import BaseSMSProvider, SMSProviderType
 from .aws_sns_provider import AWSSNSProvider
 from .twilio_provider import TwilioProvider
+from .whatsapp_provider import WhatsAppProvider
+from .telegram_provider import TelegramProvider
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +46,21 @@ class SMSProviderFactory:
                 auth_token=kwargs.get('auth_token'),
                 from_phone_number=kwargs.get('from_phone_number')
             )
+
+        elif provider_type == SMSProviderType.WHATSAPP:
+            return WhatsAppProvider(
+                api_url=kwargs.get('api_url', 'http://localhost:3000')
+            )
+
+        elif provider_type == SMSProviderType.TELEGRAM:
+            # Try to get token from kwargs or env var (via config loader usually, but here we check kwargs)
+            bot_token = kwargs.get('bot_token')
+            if not bot_token:
+                # Fallback to env var if not passed directly
+                import os
+                bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+            
+            return TelegramProvider(bot_token=bot_token)
 
         else:
             logger.error(f"Unsupported SMS provider type: {provider_type}")

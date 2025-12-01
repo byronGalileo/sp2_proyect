@@ -78,6 +78,8 @@ class SMSProvider(Enum):
     """SMS provider types"""
     AWS_SNS = "aws_sns"
     TWILIO = "twilio"
+    WHATSAPP = "whatsapp"
+    TELEGRAM = "telegram"
 
 
 class ServiceNotificationConfig:
