@@ -8,7 +8,10 @@ import '../../../../config/themes/app_theme.dart';
 import '../../../../models/host.dart';
 import '../../../../models/service.dart';
 import '../../../../models/log.dart';
+import '../../../../models/managed_service.dart';
 import '../../../../utils/services/monitoring_service.dart';
+import '../../../../utils/services/managed_service_service.dart';
+import '../../../../utils/services/notification_service.dart';
 
 
 class HostServicesMonitoringDialog extends StatefulWidget {
@@ -28,12 +31,22 @@ class _HostServicesMonitoringDialogState
     extends State<HostServicesMonitoringDialog>
     with SingleTickerProviderStateMixin {
   final MonitoringService _monitoringService = MonitoringService();
+  final ManagedServiceService _managedServiceService = ManagedServiceService();
+  final NotificationService _notificationService = NotificationService();
 
   late AnimationController _refreshController;
 
   List<Service> _services = [];
   // Map of service name to its status history from logs
   final Map<String, List<ServiceLogPoint>> _serviceLogsHistory = {};
+  // Map of service name to ManagedService configuration
+  final Map<String, ManagedService> _managedServicesConfig = {};
+  // Map of service name to current recovery attempt count
+  final Map<String, int> _recoveryAttempts = {};
+  // Map to track if notification has been sent for a service
+  final Map<String, bool> _notificationSent = {};
+  // Map to track last log level for each service (to detect transitions)
+  final Map<String, String> _lastLogLevel = {};
   bool _isLoading = true;
   String _errorMessage = '';
   Timer? _refreshTimer;
@@ -73,6 +86,9 @@ class _HostServicesMonitoringDialogState
           .where((s) => s.host == widget.host.hostId || s.host == widget.host.hostname)
           .toList();
 
+      // Load managed services configuration to get max_recovery_attempts
+      await _loadManagedServicesConfig();
+
       // Load unsent logs for each service and update chart
       for (var service in hostServices) {
         await _loadServiceLogs(service.id);
@@ -97,6 +113,20 @@ class _HostServicesMonitoringDialogState
     }
   }
 
+  Future<void> _loadManagedServicesConfig() async {
+    try {
+      final response = await _managedServiceService.getServices(
+        hostId: widget.host.hostId,
+      );
+
+      for (var managedService in response.data.services) {
+        _managedServicesConfig[managedService.serviceName] = managedService;
+      }
+    } catch (e) {
+      debugPrint('Error loading managed services config: $e');
+    }
+  }
+
   Future<void> _loadServiceLogs(String serviceName) async {
     try {
       // Get unsent logs for this service
@@ -116,6 +146,9 @@ class _HostServicesMonitoringDialogState
       final logIds = <String>[];
       for (var log in logsResponse.logs) {
         logIds.add(log.id);
+
+        // Check for recovery attempt messages in logs
+        await _checkRecoveryAttempts(serviceName, log);
 
         // Determine status from the log's status field: 1 = UP (active), 0 = DOWN (inactive/failed)
         double statusValue;
@@ -165,6 +198,113 @@ class _HostServicesMonitoringDialogState
     } catch (e) {
       // Don't fail the whole operation if one service fails
       debugPrint('Error loading logs for $serviceName: $e');
+    }
+  }
+
+  /// Check recovery attempts in log messages and send notification if max attempts reached
+  /// This counts ERROR logs with "restart failed" as each represents a failed restart attempt
+  Future<void> _checkRecoveryAttempts(String serviceName, Log log) async {
+    try {
+      // Get the managed service config for this service
+      final managedService = _managedServicesConfig[serviceName];
+      if (managedService == null) return;
+
+      final message = log.message.toLowerCase();
+      final logLevel = log.logLevel.toUpperCase();
+      final logStatus = log.status?.toLowerCase() ?? '';
+      final tags = log.tags ?? [];
+
+      // Initialize recovery attempts counter if not exists
+      if (!_recoveryAttempts.containsKey(serviceName)) {
+        _recoveryAttempts[serviceName] = 0;
+      }
+
+      // Check if service is back to active/running - reset counter and notification flag
+      if (logStatus == 'active' ||
+          logStatus == 'running' ||
+          logStatus == 'up' ||
+          message.contains('status=active') ||
+          message.contains('active=true')) {
+
+        // Reset counters when service recovers
+        _recoveryAttempts[serviceName] = 0;
+        _notificationSent[serviceName] = false;
+        _lastLogLevel[serviceName] = logLevel;
+        debugPrint('✅ Service $serviceName recovered - counters reset');
+        return;
+      }
+
+      // Check if this is an ERROR log indicating a failed restart attempt
+      // Pattern: ERROR with "restart failed" and tags containing "remediation" or "restart"
+      final isRestartError = logLevel == 'ERROR' &&
+          (message.contains('restart failed') ||
+           message.contains('failed to restart')) &&
+          (tags.contains('remediation') || tags.contains('restart'));
+
+      if (isRestartError) {
+        // Increment the recovery attempts counter
+        _recoveryAttempts[serviceName] = (_recoveryAttempts[serviceName] ?? 0) + 1;
+        final currentAttempts = _recoveryAttempts[serviceName]!;
+
+        debugPrint('❌ Service $serviceName: Recovery attempt $currentAttempts FAILED (ERROR log with restart failed)');
+
+        // Check if max attempts reached
+        final maxAttempts = managedService.recovery.maxRecoveryAttempts;
+        if (currentAttempts >= maxAttempts &&
+            _notificationSent[serviceName] != true) {
+
+          // Send notification
+          await _sendMaxAttemptsNotification(serviceName, managedService, currentAttempts);
+
+          // Mark as sent to avoid duplicate notifications
+          _notificationSent[serviceName] = true;
+
+          debugPrint('🔔 Notification sent for $serviceName: Max recovery attempts ($maxAttempts) reached after $currentAttempts failed restart attempts');
+        }
+      }
+
+      // Track INFO logs showing service status for debugging
+      if (logLevel == 'INFO' && logStatus == 'inactive') {
+        final currentAttempts = _recoveryAttempts[serviceName] ?? 0;
+        debugPrint('ℹ️  Service $serviceName: Status check - inactive (attempts so far: $currentAttempts)');
+      }
+
+      // Update last log level for this service
+      _lastLogLevel[serviceName] = logLevel;
+
+    } catch (e) {
+      debugPrint('Error checking recovery attempts for $serviceName: $e');
+    }
+  }
+
+  /// Send notification when max recovery attempts are reached
+  Future<void> _sendMaxAttemptsNotification(
+    String serviceName,
+    ManagedService managedService,
+    int attempts,
+  ) async {
+    try {
+      await _notificationService.sendNotification(
+        serviceName: serviceName,
+        host: managedService.hostId,
+        eventType: 'service_restart_failed',
+        message: 'Service $serviceName failed to recover after $attempts attempts. Maximum recovery attempts (${managedService.recovery.maxRecoveryAttempts}) reached.',
+      );
+
+      // Show snackbar to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Notification sent: $serviceName reached max recovery attempts',
+            ),
+            backgroundColor: AppColors.warning,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending notification for $serviceName: $e');
     }
   }
 

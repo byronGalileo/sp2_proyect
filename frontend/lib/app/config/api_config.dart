@@ -41,4 +41,7 @@ class ApiEndpoints {
   static const String monitoringStart = '/monitoring/start';
   static const String monitoringStop = '/monitoring/stop';
   static const String monitoringStatus = '/monitoring/status';
+
+  // Notification endpoints
+  static const String notificationsSend = '/notifications/send';
 }

@@ -126,4 +126,26 @@ class NotificationService {
       throw ApiException.fromDioError(e);
     }
   }
+
+  /// Send notification for a service event
+  Future<void> sendNotification({
+    required String serviceName,
+    required String host,
+    required String eventType,
+    required String message,
+  }) async {
+    try {
+      await _dio.post(
+        '/notifications/send',
+        data: {
+          'service_name': serviceName,
+          'host': host,
+          'event_type': eventType,
+          'message': message,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 }
