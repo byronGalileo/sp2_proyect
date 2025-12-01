@@ -1,5 +1,8 @@
 import os
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class MongoConfig:
     """MongoDB configuration management"""
@@ -13,15 +16,15 @@ class MongoConfig:
     def _get_connection_string(self) -> str:
         """Build MongoDB connection string from environment variables"""
         host = os.getenv('MONGO_HOST', 'localhost')
-        port = os.getenv('MONGO_PORT', '27017')
+        # port = os.getenv('MONGO_PORT', '27017')
         username = os.getenv('MONGO_USERNAME')
         password = os.getenv('MONGO_PASSWORD')
-        auth_db = os.getenv('MONGO_AUTH_DB', 'admin')
+        cluster_name = os.getenv('MONGO_CLUSTER', 'Cluster0')
 
         if username and password:
-            return f"mongodb://{username}:{password}@{host}:{port}/{auth_db}"
+            return f"mongodb+srv://{username}:{password}@{host}/?retryWrites=true&w=majority&appName={cluster_name}"
         else:
-            return f"mongodb://{host}:{port}"
+            return f"mongodb://{host}"
 
     @property
     def connection_options(self) -> dict:
