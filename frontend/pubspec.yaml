@@ -1,4 +1,4 @@
-name: daily_task
+name: monitoring_app
 description: A new Flutter project.
 
 # The following line prevents the package from being accidentally published to
@@ -42,6 +42,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   json_annotation: ^4.8.1
   fl_chart: ^0.69.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_lints: ^6.0.0
@@ -62,6 +63,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/raster/.
+    - .env
   #   - images/a_dot_ham.jpeg
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

@@ -1,10 +1,10 @@
-import 'package:daily_task/app/constans/app_constants.dart';
-import 'package:daily_task/app/shared_components/card_task.dart';
-import 'package:daily_task/app/shared_components/list_task_assigned.dart';
-import 'package:daily_task/app/shared_components/list_task_date.dart';
-import 'package:daily_task/app/shared_components/selection_button.dart';
-import 'package:daily_task/app/shared_components/task_progress.dart';
-import 'package:daily_task/app/shared_components/user_profile.dart';
+import 'package:monitoring_app/app/constans/app_constants.dart';
+import 'package:monitoring_app/app/shared_components/card_task.dart';
+import 'package:monitoring_app/app/shared_components/list_task_assigned.dart';
+import 'package:monitoring_app/app/shared_components/list_task_date.dart';
+import 'package:monitoring_app/app/shared_components/selection_button.dart';
+import 'package:monitoring_app/app/shared_components/task_progress.dart';
+import 'package:monitoring_app/app/shared_components/user_profile.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:daily_task/app/utils/helpers/app_helpers.dart';
+import 'package:monitoring_app/app/utils/helpers/app_helpers.dart';
 
 void main() {
   group("String Extension", () {

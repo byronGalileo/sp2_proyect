@@ -1,4 +1,4 @@
-import 'package:daily_task/app/utils/helpers/snackbar_helper.dart';
+import 'package:monitoring_app/app/utils/helpers/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../models/user.dart';

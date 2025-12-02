@@ -1,6 +1,6 @@
-import 'package:daily_task/app/constans/app_constants.dart';
+import 'package:monitoring_app/app/constans/app_constants.dart';
 import 'package:flutter/material.dart';
-import 'package:daily_task/app/utils/helpers/app_helpers.dart';
+import 'package:monitoring_app/app/utils/helpers/app_helpers.dart';
 
 class SimpleUserProfile extends StatelessWidget {
   const SimpleUserProfile({

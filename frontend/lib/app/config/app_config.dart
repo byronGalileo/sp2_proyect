@@ -1,10 +1,12 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConfig {
   static const String appName = 'Systems Monitor';
   static const String appVersion = '1.0.0';
 
   // API Configuration
-  static const String baseUrl = 'http://192.168.3.93:8000/api/v1';
-  static const String monitoringBaseUrl = 'http://192.168.3.93:8001';
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://192.168.3.216:8000/api/v1';
+  static String get monitoringBaseUrl => dotenv.env['MONITORING_BASE_URL'] ?? 'http://192.168.3.216:8001';
   static const Duration requestTimeout = Duration(seconds: 30);
 
   // Storage Keys

@@ -1,6 +1,6 @@
 import '../config/themes/app_theme.dart';
-import 'package:daily_task/app/features/auth/controllers/auth_controller.dart';
-import 'package:daily_task/app/config/routes/app_pages.dart';
+import 'package:monitoring_app/app/features/auth/controllers/auth_controller.dart';
+import 'package:monitoring_app/app/config/routes/app_pages.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 

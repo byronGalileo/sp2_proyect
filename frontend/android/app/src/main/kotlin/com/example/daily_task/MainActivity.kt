@@ -1,4 +1,4 @@
-package com.example.daily_task
+package com.example.monitoring_app
 
 import io.flutter.embedding.android.FlutterActivity
 
