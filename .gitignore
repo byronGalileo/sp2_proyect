@@ -12,3 +12,4 @@
 *.csv
 *config*.json
 *.Rhistory
+venv
