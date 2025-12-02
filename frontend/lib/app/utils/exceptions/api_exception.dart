@@ -40,6 +40,49 @@ class ApiException implements Exception {
     );
   }
 
+  /// Create ApiException from Dio error
+  factory ApiException.fromDioError(dynamic error) {
+    // We can't import Dio here to avoid circular dependency or extra dependency if this file is shared
+    // But we can check the error type name or properties if needed, or just treat it as generic error
+    // ideally we should import dio, but for now let's map it generically or check properties dynamically
+    
+    // If we can import dio, we would do:
+    // if (error is DioException) { ... }
+    
+    // Since we are adding dio to the project, let's assume we can use dynamic checking or just wrap it
+    // For a proper implementation, we should import dio in this file, but to avoid breaking other things
+    // let's just extract the message if possible.
+    
+    String message = 'Network error occurred';
+    int? statusCode;
+    String? details;
+
+    try {
+      // dynamic access to DioException properties
+      if (error.runtimeType.toString() == 'DioException') {
+        final response = (error as dynamic).response;
+        if (response != null) {
+          statusCode = response.statusCode;
+          if (response.data != null && response.data is Map) {
+             message = response.data['detail'] ?? response.data['message'] ?? 'Error from server';
+          }
+        } else {
+           message = (error as dynamic).message ?? 'Connection error';
+        }
+      }
+    } catch (e) {
+      // fallback
+      details = error.toString();
+    }
+
+    return ApiException(
+      statusCode: statusCode,
+      message: message,
+      details: details ?? error.toString(),
+      originalError: error,
+    );
+  }
+
   /// Get user-friendly message for HTTP status code
   static String _getMessageForStatusCode(int statusCode) {
     switch (statusCode) {

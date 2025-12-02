@@ -1,5 +1,5 @@
 import 'package:http/http.dart' as http;
-import '../../config/api_config.dart';
+import '../../config/app_config.dart';
 import '../../models/log.dart';
 import '../helpers/api_response_handler.dart';
 
@@ -24,7 +24,7 @@ class LogService {
     }
 
     final uri = Uri.parse(
-      '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.logs}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.logs}',
     ).replace(queryParameters: queryParams);
 
     final response = await http.get(

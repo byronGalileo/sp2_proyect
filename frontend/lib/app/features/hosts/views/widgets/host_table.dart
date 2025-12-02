@@ -7,6 +7,7 @@ import '../../../../models/host.dart';
 import '../../controllers/hosts_controller.dart';
 import '../../../managed_services/controllers/managed_services_controller.dart';
 import 'host_services_monitoring_dialog.dart';
+import 'host_pagination_footer.dart';
 
 class HostTable extends StatelessWidget {
   final List<Host> hosts;
@@ -28,10 +29,10 @@ class HostTable extends StatelessWidget {
     this.onGenerateConfig,
     this.onStartExecution,
     this.onStopExecution,
-    this.footer,
+    required this.controller,
   });
 
-  final Widget? footer;
+  final HostsController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +45,11 @@ class HostTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppConfig.borderRadius),
         side: BorderSide(color: AppColors.border.withOpacity(0.5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min, // Prevent vertical stretching
-        children: [
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min, // Prevent vertical stretching
+          children: [
           Scrollbar( // Add horizontal scrollbar
             thumbVisibility: true,
             child: SingleChildScrollView(
@@ -290,9 +292,11 @@ class HostTable extends StatelessWidget {
                 }).toList(),
               ),
             ),
-          ),
-          if (footer != null) footer!,
-        ],
+            ),
+            const SizedBox(height: 16),
+            HostPaginationFooter(controller: controller),
+          ],
+        ),
       ),
     );
   }
