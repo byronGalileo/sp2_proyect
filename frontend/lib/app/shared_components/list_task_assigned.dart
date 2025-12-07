@@ -1,5 +1,5 @@
-import 'package:daily_task/app/constans/app_constants.dart';
-import 'package:daily_task/app/utils/helpers/app_helpers.dart';
+import 'package:monitoring_app/app/constans/app_constants.dart';
+import 'package:monitoring_app/app/utils/helpers/app_helpers.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:flutter/material.dart';

@@ -47,6 +47,9 @@ class _HostServicesMonitoringDialogState
   final Map<String, bool> _notificationSent = {};
   // Map to track last log level for each service (to detect transitions)
   final Map<String, String> _lastLogLevel = {};
+  // Map to track expanded state of each service card
+  final Map<String, bool> _expandedServices = {};
+
   bool _isLoading = true;
   String _errorMessage = '';
   Timer? _refreshTimer;
@@ -92,6 +95,11 @@ class _HostServicesMonitoringDialogState
       // Load unsent logs for each service and update chart
       for (var service in hostServices) {
         await _loadServiceLogs(service.id);
+
+        // Initialize expanded state for new services
+        if (!_expandedServices.containsKey(service.id)) {
+          _expandedServices[service.id] = false;
+        }
       }
 
       setState(() {
@@ -348,9 +356,7 @@ class _HostServicesMonitoringDialogState
                         children: [
                           _buildSummaryCards(context),
                           const SizedBox(height: 24),
-                          _buildStatusChart(context),
-                          const SizedBox(height: 24),
-                          _buildServicesTable(context),
+                          _buildIndividualServiceCharts(context),
                         ],
                       ),
                     ),
@@ -626,401 +632,7 @@ class _HostServicesMonitoringDialogState
     );
   }
 
-  Widget _buildStatusChart(BuildContext context) {
-    // Check if we have any data in the service logs history
-    final hasData = _serviceLogsHistory.values.any((logs) => logs.length >= 2);
-
-    if (!hasData) {
-      return Card(
-        color: AppColors.primaryBase,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppConfig.padding * 1.5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    EvaIcons.trendingUpOutline,
-                    size: 20,
-                    color: AppColors.accentOrange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Service Status Over Time',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textOnPrimary,
-                        ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const SizedBox(
-                height: 200,
-                child: Center(
-                  child: Text(
-                    'Collecting data...\nChart will appear after receiving logs.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textLight),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return LayoutBuilder(builder: (context, constraints) {
-      // Calculate required width based on data points
-      int maxPoints = 0;
-      for (var logs in _serviceLogsHistory.values) {
-        if (logs.length > maxPoints) {
-          maxPoints = logs.length;
-        }
-      }
-      
-      // Ensure at least 40px per data point, or min 600px, or available width
-      final double pointsWidth = maxPoints * 40.0;
-      final double minChartWidth = 600.0;
-      final double availableWidth = constraints.maxWidth - (AppConfig.padding * 3);
-      
-      final double chartWidth = math.max(availableWidth, math.max(minChartWidth, pointsWidth));
-
-      return Card(
-        color: AppColors.primaryBase,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppConfig.padding * 1.5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    EvaIcons.trendingUpOutline,
-                    size: 20,
-                    color: AppColors.accentOrange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Service Status Over Time',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textOnPrimary,
-                        ),
-                  ),
-                  const Spacer(),
-                  _buildServiceStatusLegend(),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: chartWidth,
-                  height: 250,
-                  child: LineChart(_buildServiceStatusChartData()),
-                ),
-              ),
-              if (_serviceLogsHistory.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildServiceLegend(),
-              ],
-            ],
-          ),
-        ),
-      );
-    });
-  }
-
-  Widget _buildServiceStatusLegend() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: [
-        _buildLegendItem('UP', AppColors.success),
-        _buildLegendItem('WARN', AppColors.warning),
-        _buildLegendItem('DOWN', AppColors.error),
-      ],
-    );
-  }
-
-  Widget _buildServiceLegend() {
-    final colors = [
-      AppColors.info,
-      AppColors.accentOrange,
-      const Color(0xFF9C27B0), // Purple
-      const Color(0xFF00BCD4), // Cyan
-      const Color(0xFFFF5722), // Deep Orange
-    ];
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      children: _serviceLogsHistory.keys.toList().asMap().entries.map((entry) {
-        final color = colors[entry.key % colors.length];
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 12,
-              height: 3,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              entry.value,
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textLight,
-              ),
-            ),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  LineChartData _buildServiceStatusChartData() {
-    final colors = [
-      AppColors.info,
-      AppColors.accentOrange,
-      const Color(0xFF9C27B0), // Purple
-      const Color(0xFF00BCD4), // Cyan
-      const Color(0xFFFF5722), // Deep Orange
-    ];
-
-    final lineBarsData = <LineChartBarData>[];
-    int colorIndex = 0;
-
-    // Find the max number of data points across all services
-    int maxPoints = 0;
-    for (var logs in _serviceLogsHistory.values) {
-      if (logs.length > maxPoints) {
-        maxPoints = logs.length;
-      }
-    }
-
-    // Create a line for each service
-    for (var entry in _serviceLogsHistory.entries) {
-      final logs = entry.value;
-
-      if (logs.length < 2) continue;
-
-      // Create spots for this service's status over time
-      final spots = logs.asMap().entries.map((e) {
-        return FlSpot(e.key.toDouble(), e.value.status);
-      }).toList();
-
-      lineBarsData.add(
-        LineChartBarData(
-          spots: spots,
-          color: colors[colorIndex % colors.length],
-          barWidth: 2,
-          isStrokeCapRound: true,
-          dotData: FlDotData(
-            show: true,
-            getDotPainter: (spot, percent, barData, index) {
-              // Color the dot based on status value
-              Color dotColor;
-              if (spot.y >= 0.8) {
-                dotColor = AppColors.success; // UP
-              } else if (spot.y >= 0.3) {
-                dotColor = AppColors.warning; // WARNING
-              } else {
-                dotColor = AppColors.error; // DOWN
-              }
-              return FlDotCirclePainter(
-                radius: 3,
-                color: dotColor,
-                strokeWidth: 1,
-                strokeColor: Colors.white,
-              );
-            },
-          ),
-          belowBarData: BarAreaData(
-            show: true,
-            gradient: LinearGradient(
-              colors: [
-                colors[colorIndex % colors.length].withValues(alpha: 0.15),
-                colors[colorIndex % colors.length].withValues(alpha: 0.0),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
-      );
-
-      colorIndex++;
-    }
-
-    // Get timestamps for bottom axis from the first service with data
-    List<ServiceLogPoint> firstServiceLogs = [];
-    for (var logs in _serviceLogsHistory.values) {
-      if (logs.length >= 2) {
-        firstServiceLogs = logs;
-        break;
-      }
-    }
-
-    return LineChartData(
-      lineBarsData: lineBarsData,
-      minY: 0,
-      maxY: 1,
-      titlesData: FlTitlesData(
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 40,
-            interval: 0.5,
-            getTitlesWidget: (value, meta) {
-              String label;
-              if (value == 1.0) {
-                label = 'UP';
-              } else if (value == 0.5) {
-                label = 'WARN';
-              } else if (value == 0.0) {
-                label = 'DOWN';
-              } else {
-                return const SizedBox.shrink();
-              }
-              return Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 9,
-                  color: AppColors.textLight,
-                ),
-              );
-            },
-          ),
-        ),
-        rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-            interval: (maxPoints / 5).ceilToDouble().clamp(1, double.infinity),
-            getTitlesWidget: (value, meta) {
-              if (value.toInt() >= 0 && value.toInt() < firstServiceLogs.length) {
-                final timestamp = firstServiceLogs[value.toInt()].timestamp;
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
-                    style: const TextStyle(
-                      fontSize: 9,
-                      color: AppColors.textLight,
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
-        ),
-      ),
-      gridData: FlGridData(
-        show: true,
-        drawVerticalLine: false,
-        horizontalInterval: 0.5,
-        getDrawingHorizontalLine: (value) {
-          Color lineColor;
-          if (value == 1.0) {
-            lineColor = AppColors.success.withValues(alpha: 0.3);
-          } else if (value == 0.5) {
-            lineColor = AppColors.warning.withValues(alpha: 0.3);
-          } else if (value == 0.0) {
-            lineColor = AppColors.error.withValues(alpha: 0.3);
-          } else {
-            lineColor = AppColors.border.withValues(alpha: 0.2);
-          }
-          return FlLine(
-            color: lineColor,
-            strokeWidth: 1,
-          );
-        },
-      ),
-      borderData: FlBorderData(
-        show: true,
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.3)),
-      ),
-      lineTouchData: LineTouchData(
-        touchTooltipData: LineTouchTooltipData(
-          getTooltipItems: (touchedSpots) {
-            return touchedSpots.map((spot) {
-              // Get service name from index
-              final serviceNames = _serviceLogsHistory.keys.toList();
-              final serviceName = spot.barIndex < serviceNames.length
-                  ? serviceNames[spot.barIndex]
-                  : 'Unknown';
-
-              String statusLabel;
-              if (spot.y >= 0.8) {
-                statusLabel = 'UP';
-              } else if (spot.y >= 0.3) {
-                statusLabel = 'WARNING';
-              } else {
-                statusLabel = 'DOWN';
-              }
-
-              return LineTooltipItem(
-                '$serviceName: $statusLabel',
-                const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 11,
-                ),
-              );
-            }).toList();
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 10,
-            color: AppColors.textLight,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildServicesTable(BuildContext context) {
+  Widget _buildIndividualServiceCharts(BuildContext context) {
     if (_services.isEmpty) {
       return Card(
         color: AppColors.primaryBase,
@@ -1048,199 +660,544 @@ class _HostServicesMonitoringDialogState
       );
     }
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              const Icon(
+                EvaIcons.pieChartOutline,
+                size: 20,
+                color: AppColors.accentOrange,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Individual Service Charts',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textOnPrimary,
+                    ),
+              ),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    final allExpanded = _expandedServices.values.every((e) => e);
+                    for (var serviceId in _expandedServices.keys) {
+                      _expandedServices[serviceId] = !allExpanded;
+                    }
+                  });
+                },
+                icon: Icon(
+                  _expandedServices.values.every((e) => e)
+                      ? Icons.unfold_less
+                      : Icons.unfold_more,
+                  size: 16,
+                  color: AppColors.accentOrange,
+                ),
+                label: Text(
+                  _expandedServices.values.every((e) => e)
+                      ? 'Collapse All'
+                      : 'Expand All',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.accentOrange,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ..._services.map((service) => _buildServiceCard(context, service)),
+      ],
+    );
+  }
+
+  Widget _buildServiceCard(BuildContext context, Service service) {
+    final isExpanded = _expandedServices[service.id] ?? false;
+    final hasData = _serviceLogsHistory.containsKey(service.id) &&
+                    _serviceLogsHistory[service.id]!.length >= 2;
+
+    // Get service color based on status
+    Color serviceColor = _getLevelColor(service.latestLevel);
+
     return Card(
       color: AppColors.primaryBase,
       elevation: 2,
+      margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+        side: BorderSide(
+          color: serviceColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(AppConfig.padding),
-            child: Row(
-              children: [
-                const Icon(
-                  EvaIcons.listOutline,
-                  size: 20,
-                  color: AppColors.accentOrange,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Services Details',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textOnPrimary,
-                      ),
-                ),
-              ],
+          // Service Header
+          InkWell(
+            onTap: () {
+              setState(() {
+                _expandedServices[service.id] = !isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppConfig.borderRadius),
+              bottom: isExpanded ? Radius.zero : Radius.circular(AppConfig.borderRadius),
             ),
-          ),
-          Scrollbar(
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-            child: DataTable(
-              headingTextStyle: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(
-                      fontWeight: FontWeight.bold, color: AppColors.textOnPrimary),
-              headingRowColor: WidgetStateProperty.all(
-                AppColors.primaryDark.withValues(alpha: 0.5),
+            child: Container(
+              padding: const EdgeInsets.all(AppConfig.padding),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDark.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppConfig.borderRadius),
+                  bottom: isExpanded ? Radius.zero : Radius.circular(AppConfig.borderRadius),
+                ),
               ),
-              dataTextStyle: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textSecondary, fontSize: 13),
-              columns: const [
-                DataColumn(label: Text('Status')),
-                DataColumn(label: Text('Service Name')),
-                DataColumn(label: Text('Level')),
-                DataColumn(label: Text('Total Logs')),
-                DataColumn(label: Text('Unsent')),
-                DataColumn(label: Text('Type')),
-                DataColumn(label: Text('Last Update')),
-                DataColumn(label: Text('Actions')),
-              ],
-              rows: _services.map((service) {
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: _getLevelColor(service.latestLevel),
-                          shape: BoxShape.circle,
+              child: Row(
+                children: [
+                  // Status indicator
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: serviceColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: serviceColor.withValues(alpha: 0.5),
+                          blurRadius: 4,
+                          spreadRadius: 1,
                         ),
-                      ),
+                      ],
                     ),
-                    DataCell(
-                      Text(
-                        service.id,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      service.latestLevel != null
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _getLevelColor(service.latestLevel)
-                                    .withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
+                  ),
+                  const SizedBox(width: 12),
+                  // Service name and info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service.id,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: AppColors.textOnPrimary,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: Text(
-                                service.latestLevel!,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: _getLevelColor(service.latestLevel),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (service.latestLevel != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: serviceColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  service.latestLevel!,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: serviceColor,
+                                  ),
                                 ),
                               ),
-                            )
-                          : const Text('N/A'),
-                    ),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.info.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
+                            const SizedBox(width: 8),
+                            if (service.serviceType != null)
+                              Text(
+                                service.serviceType!,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            const Spacer(),
+                            if (service.latestTimestamp != null)
+                              Text(
+                                _formatTimestamp(service.latestTimestamp!),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
                         ),
-                        child: Text(
-                          service.totalLogs.toString(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Stats badges
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.info.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(EvaIcons.fileTextOutline,
+                                   size: 12,
+                                   color: AppColors.info),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${service.totalLogs}',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: AppColors.info,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  if (service.unsentLogs > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                    DataCell(
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: (service.unsentLogs > 0
-                                  ? AppColors.warning
-                                  : AppColors.textSecondary)
-                              .withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          service.unsentLogs.toString(),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: service.unsentLogs > 0
-                                ? AppColors.warning
-                                : AppColors.textLight,
-                          ),
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      service.serviceType != null &&
-                              service.serviceType != 'unknown'
-                          ? Text(
-                              service.serviceType!,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: AppColors.textLight,
-                              ),
-                            )
-                          : const Text('Unknown'),
-                    ),
-                    DataCell(
-                      Text(
-                        service.latestTimestamp != null
-                            ? _formatTimestamp(service.latestTimestamp!)
-                            : 'N/A',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                    ),
-                    DataCell(
-                      Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (service.unsentLogs > 0)
-                            IconButton(
-                              icon: const Icon(EvaIcons.checkmarkCircle2, size: 16),
-                              onPressed: () => _showLogsDialog(context, service),
-                              tooltip: 'View & Clear Unsent Logs',
-                              color: AppColors.success,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            )
-                          else
-                            const Icon(
-                              EvaIcons.checkmarkCircle2,
-                              size: 16,
-                              color: AppColors.textSecondary,
+                          const Icon(EvaIcons.emailOutline,
+                                     size: 12,
+                                     color: AppColors.warning),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${service.unsentLogs}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.warning,
                             ),
+                          ),
                         ],
                       ),
                     ),
-                  ],
-                );
-              }).toList(),
+                  const SizedBox(width: 8),
+                  // Expand/Collapse icon
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: AppColors.textLight,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Expandable chart section
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.all(AppConfig.padding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Chart title with legend
+                  Row(
+                    children: [
+                      const Icon(
+                        EvaIcons.trendingUpOutline,
+                        size: 16,
+                        color: AppColors.accentOrange,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Status Timeline',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textOnPrimary,
+                            ),
+                      ),
+                      const Spacer(),
+                      _buildServiceStatusLegend(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Chart
+                  if (!hasData)
+                    const SizedBox(
+                      height: 150,
+                      child: Center(
+                        child: Text(
+                          'Collecting data...\nChart will appear after receiving logs.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textLight,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    _buildServiceChart(service),
+                  const SizedBox(height: 12),
+                  // Actions
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (service.unsentLogs > 0)
+                        TextButton.icon(
+                          onPressed: () => _showLogsDialog(context, service),
+                          icon: const Icon(EvaIcons.eyeOutline, size: 14),
+                          label: const Text('View Unsent Logs'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.accentOrange,
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceChart(Service service) {
+    final logs = _serviceLogsHistory[service.id] ?? [];
+    if (logs.length < 2) return const SizedBox.shrink();
+
+    // Calculate required width based on data points
+    final double pointsWidth = logs.length * 40.0;
+    final double minChartWidth = 400.0;
+    final double chartWidth = math.max(minChartWidth, pointsWidth);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: chartWidth,
+        height: 180,
+        child: LineChart(_buildSingleServiceChartData(logs, service.id)),
+      ),
+    );
+  }
+
+  LineChartData _buildSingleServiceChartData(List<ServiceLogPoint> logs, String serviceName) {
+    // Create spots for this service's status over time
+    final spots = logs.asMap().entries.map((e) {
+      return FlSpot(e.key.toDouble(), e.value.status);
+    }).toList();
+
+    // Determine service color based on latest status
+    Color lineColor = AppColors.info;
+    if (logs.isNotEmpty) {
+      final latestStatus = logs.last.status;
+      if (latestStatus >= 0.8) {
+        lineColor = AppColors.success;
+      } else if (latestStatus >= 0.3) {
+        lineColor = AppColors.warning;
+      } else {
+        lineColor = AppColors.error;
+      }
+    }
+
+    return LineChartData(
+      lineBarsData: [
+        LineChartBarData(
+          spots: spots,
+          color: lineColor,
+          barWidth: 3,
+          isStrokeCapRound: true,
+          dotData: FlDotData(
+            show: true,
+            getDotPainter: (spot, percent, barData, index) {
+              // Color the dot based on status value
+              Color dotColor;
+              if (spot.y >= 0.8) {
+                dotColor = AppColors.success; // UP
+              } else if (spot.y >= 0.3) {
+                dotColor = AppColors.warning; // WARNING
+              } else {
+                dotColor = AppColors.error; // DOWN
+              }
+              return FlDotCirclePainter(
+                radius: 4,
+                color: dotColor,
+                strokeWidth: 2,
+                strokeColor: AppColors.primaryDark,
+              );
+            },
+          ),
+          belowBarData: BarAreaData(
+            show: true,
+            gradient: LinearGradient(
+              colors: [
+                lineColor.withValues(alpha: 0.2),
+                lineColor.withValues(alpha: 0.0),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
           ),
         ),
       ],
+      minY: 0,
+      maxY: 1,
+      titlesData: FlTitlesData(
+        leftTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 35,
+            interval: 0.5,
+            getTitlesWidget: (value, meta) {
+              String label;
+              if (value == 1.0) {
+                label = 'UP';
+              } else if (value == 0.5) {
+                label = 'WARN';
+              } else if (value == 0.0) {
+                label = 'DOWN';
+              } else {
+                return const SizedBox.shrink();
+              }
+              return Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 9,
+                  color: AppColors.textLight,
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            },
+          ),
+        ),
+        rightTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        topTitles: const AxisTitles(
+          sideTitles: SideTitles(showTitles: false),
+        ),
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 25,
+            interval: (logs.length / 5).ceilToDouble().clamp(1, double.infinity),
+            getTitlesWidget: (value, meta) {
+              if (value.toInt() >= 0 && value.toInt() < logs.length) {
+                final timestamp = logs[value.toInt()].timestamp;
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child: Text(
+                    '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+                    style: const TextStyle(
+                      fontSize: 8,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
       ),
+      gridData: FlGridData(
+        show: true,
+        drawVerticalLine: false,
+        horizontalInterval: 0.5,
+        getDrawingHorizontalLine: (value) {
+          Color lineColorGrid;
+          if (value == 1.0) {
+            lineColorGrid = AppColors.success.withValues(alpha: 0.2);
+          } else if (value == 0.5) {
+            lineColorGrid = AppColors.warning.withValues(alpha: 0.2);
+          } else if (value == 0.0) {
+            lineColorGrid = AppColors.error.withValues(alpha: 0.2);
+          } else {
+            lineColorGrid = AppColors.border.withValues(alpha: 0.1);
+          }
+          return FlLine(
+            color: lineColorGrid,
+            strokeWidth: 1,
+            dashArray: [5, 5],
+          );
+        },
+      ),
+      borderData: FlBorderData(
+        show: true,
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.2)),
+      ),
+      lineTouchData: LineTouchData(
+        touchTooltipData: LineTouchTooltipData(
+          getTooltipColor: (spot) => AppColors.primaryDark.withValues(alpha: 0.9),
+          getTooltipItems: (touchedSpots) {
+            return touchedSpots.map((spot) {
+              String statusLabel;
+              Color statusColor;
+              if (spot.y >= 0.8) {
+                statusLabel = 'UP';
+                statusColor = AppColors.success;
+              } else if (spot.y >= 0.3) {
+                statusLabel = 'WARNING';
+                statusColor = AppColors.warning;
+              } else {
+                statusLabel = 'DOWN';
+                statusColor = AppColors.error;
+              }
+
+              final log = logs[spot.x.toInt()];
+              final time = '${log.timestamp.hour.toString().padLeft(2, '0')}:'
+                          '${log.timestamp.minute.toString().padLeft(2, '0')}:'
+                          '${log.timestamp.second.toString().padLeft(2, '0')}';
+
+              return LineTooltipItem(
+                '$statusLabel\n$time\n${log.level}',
+                TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
+                ),
+              );
+            }).toList();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildServiceStatusLegend() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 2,
+      children: [
+        _buildLegendItem('UP', AppColors.success),
+        _buildLegendItem('WARN', AppColors.warning),
+        _buildLegendItem('DOWN', AppColors.error),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            color: AppColors.textLight,
+          ),
+        ),
+      ],
     );
   }
 

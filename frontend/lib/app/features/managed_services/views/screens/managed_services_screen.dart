@@ -13,6 +13,7 @@ import '../widgets/service_card.dart';
 import '../../../../features/monitoring/controllers/logs_controller.dart'; // Import LogsController for navigation
 import '../widgets/service_table.dart';
 import '../widgets/notification_config_dialog.dart';
+import '../widgets/managed_service_pagination_footer.dart';
 
 class ManagedServicesScreen extends StatefulWidget {
   const ManagedServicesScreen({super.key});
@@ -108,7 +109,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
             if (isMobile) {
               return Column(
                 children: [
-                  _buildPagination(context, controller),
+                  ManagedServicePaginationFooter(controller: controller),
                   Expanded(
                     child: RefreshIndicator(
                       onRefresh: controller.refresh,
@@ -179,9 +180,9 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
                               controller.deleteService(service.serviceId),
                           onNotification: (service) =>
                               _showNotificationDialog(context, service),
+                          controller: controller,
                         ),
                         const SizedBox(height: 16),
-                        _buildPagination(context, controller),
                       ],
                     ),
                   ),
@@ -625,48 +626,7 @@ class _ManagedServicesScreenState extends State<ManagedServicesScreen> {
     );
   }
 
-  Widget _buildPagination(
-      BuildContext context, ManagedServicesController controller) {
-    return Obx(() {
-      if (controller.services.isEmpty) return const SizedBox.shrink();
 
-      return Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConfig.padding,
-          vertical: AppConfig.padding / 2,
-        ),
-        decoration: BoxDecoration( // Apply dark background
-          color: AppColors.primaryDark.withOpacity(0.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${controller.totalServices.value} services • Page ${controller.currentPageNumber} of ${controller.totalPages}',
-              style: Theme.of(context) // Apply light text color
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.textLight),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left, color: AppColors.textLight), // Apply light icon color
-                  onPressed: controller.hasPrevious
-                      ? controller.loadPreviousPage
-                      : null,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right, color: AppColors.textLight), // Apply light icon color
-                  onPressed: controller.hasMore ? controller.loadNextPage : null,
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    });
-  }
 
   void _showServiceDialog(BuildContext context, {ManagedService? service}) {
     showDialog(

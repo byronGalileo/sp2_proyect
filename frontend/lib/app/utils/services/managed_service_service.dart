@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../config/api_config.dart';
+import '../../config/app_config.dart';
 import '../../models/managed_service.dart';
 import '../helpers/api_response_handler.dart';
+import 'storage_service.dart';
 
 class ManagedServiceService {
   /// Get all services with optional filters
@@ -41,12 +42,18 @@ class ManagedServiceService {
     }
 
     final uri = Uri.parse(
-      '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}',
     ).replace(queryParameters: queryParams);
+
+    final token = await StorageService().getToken();
+    final headers = {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
 
     final response = await http.get(
       uri,
-      headers: {'Content-Type': 'application/json'},
+      headers: headers,
     );
 
     return ApiResponseHandler.handleResponse<ManagedServiceListResponse>(
@@ -60,9 +67,13 @@ class ManagedServiceService {
   Future<ManagedServiceResponse> getServiceById(String serviceId) async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<ManagedServiceResponse>(
@@ -106,9 +117,13 @@ class ManagedServiceService {
 
     final response = await http.post(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
       body: body,
     );
 
@@ -153,9 +168,13 @@ class ManagedServiceService {
 
     final response = await http.put(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
       body: json.encode(body),
     );
 
@@ -169,9 +188,13 @@ class ManagedServiceService {
   Future<void> deleteService(String serviceId) async {
     final response = await http.delete(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.managedServices}/$serviceId',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     ApiResponseHandler.handleEmptyResponse(
@@ -184,9 +207,13 @@ class ManagedServiceService {
   Future<ServiceSummaryResponse> getDashboardSummary() async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.servicesDashboard}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.servicesDashboard}',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<ServiceSummaryResponse>(
@@ -200,9 +227,13 @@ class ManagedServiceService {
   Future<ManagedServiceListResponse> getServicesNeedingAttention() async {
     final response = await http.get(
       Uri.parse(
-        '${ApiConfig.monitoringBaseUrl}${ApiEndpoints.servicesAttention}',
+      '${AppConfig.monitoringBaseUrl}${ApiEndpoints.servicesAttention}',
       ),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        if (await StorageService().getToken() != null)
+          'Authorization': 'Bearer ${await StorageService().getToken()}',
+      },
     );
 
     return ApiResponseHandler.handleResponse<ManagedServiceListResponse>(

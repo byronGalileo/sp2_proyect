@@ -1,5 +1,10 @@
 {
     "conventionalCommits.scopes": [
-        "Monitor"
+        "Monitor",
+<<<<<<< HEAD
+        "frontend"
+=======
+        "beagle-api"
+>>>>>>> beagle_code
     ]
 }

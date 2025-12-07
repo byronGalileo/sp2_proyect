@@ -1,4 +1,4 @@
-import 'package:daily_task/app/features/dashboard/views/screens/monitoring_dashboard_screen.dart';
+import 'package:monitoring_app/app/features/dashboard/views/screens/monitoring_dashboard_screen.dart';
 import 'package:get/get.dart';
 import '../../features/auth/bindings/auth_binding.dart';
 import '../../features/dashboard/views/screens/auth/login_screen.dart';

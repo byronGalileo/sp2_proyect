@@ -3,6 +3,8 @@ import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import '../../../../config/app_config.dart';
 import '../../../../config/themes/app_theme.dart';
 import '../../../../models/managed_service.dart';
+import '../../controllers/managed_services_controller.dart';
+import 'managed_service_pagination_footer.dart';
 
 class ServiceTable extends StatelessWidget {
   final List<ManagedService> services;
@@ -16,7 +18,10 @@ class ServiceTable extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     this.onNotification,
+    required this.controller,
   });
+
+  final ManagedServicesController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,12 @@ class ServiceTable extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppConfig.borderRadius),
           side: BorderSide(color: AppColors.border.withOpacity(0.5)),
         ),
-        child: Scrollbar(
+        child: IntrinsicWidth(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Scrollbar(
           thumbVisibility: true,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -135,6 +145,11 @@ class ServiceTable extends StatelessWidget {
                 ]);
               }).toList(),
             ),
+            ),
+          ),
+              const SizedBox(height: 16),
+              ManagedServicePaginationFooter(controller: controller),
+            ],
           ),
         ),
       ),

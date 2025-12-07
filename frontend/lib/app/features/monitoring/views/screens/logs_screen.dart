@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
-import 'package:intl/intl.dart';
 import '../../../../config/app_config.dart';
 import '../../../../config/themes/app_theme.dart';
 import '../../../../shared_components/responsive_builder.dart';
 import '../../../../shared_components/widgets/loading_widget.dart';
 import '../../../../shared_components/base_screen_wrapper.dart';
 import '../../controllers/logs_controller.dart';
+import '../widgets/logs_table.dart';
 
 class LogsScreen extends StatefulWidget {
   const LogsScreen({super.key});
@@ -398,7 +398,7 @@ class _LogsScreenState extends State<LogsScreen> {
         );
       }
 
-      return _buildLogsTable(context, controller);
+      return LogsTable(controller: controller);
     });
   }
 
@@ -433,211 +433,5 @@ class _LogsScreenState extends State<LogsScreen> {
     );
   }
 
-  Widget _buildLogsTable(BuildContext context, LogsController controller) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppConfig.padding),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  Theme.of(context).primaryColor.withOpacity(0.1),
-                ),
-                columnSpacing: 24,
-                columns: const [
-                  DataColumn(label: Text('Timestamp')),
-                  DataColumn(label: Text('Level')),
-                  DataColumn(label: Text('Service')),
-                  DataColumn(label: Text('Host')),
-                  DataColumn(label: Text('Message')),
-                  DataColumn(label: Text('Type')),
-                  DataColumn(label: Text('Status')),
-                ],
-                rows: controller.logs.map((log) {
-                  return DataRow(
-                    cells: [
-                      DataCell(_buildTimestampCell(log.timestamp)),
-                      DataCell(_buildLevelBadge(log.logLevel)),
-                      DataCell(
-                        Text(
-                          log.serviceName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                        ),
-                      ),
-                      DataCell(Text(log.host ?? 'N/A')),
-                      DataCell(
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 400),
-                          child: Tooltip(
-                            message: log.message,
-                            child: Text(
-                              log.message,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(
-                        log.serviceType != null && log.serviceType != 'unknown'
-                            ? Chip(
-                                backgroundColor: AppColors.primaryBase.withOpacity(0.1),
-                                label: Text(
-                                  log.serviceType!,
-                                  style: const TextStyle(fontSize: 10, color: AppColors.textOnPrimary),
-                                ),
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              )
-                            : const Text('Unknown'),
-                      ),
-                      DataCell(
-                        Tooltip(
-                          message: log.sentToUser ? 'Sent to user' : 'Not sent',
-                          child: Icon(
-                            log.sentToUser ? EvaIcons.checkmarkCircle2 : EvaIcons.clockOutline,
-                            size: 20,
-                            color: log.sentToUser ? AppColors.success : AppColors.warning,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-            _buildPagination(context, controller),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildTimestampCell(String timestamp) {
-    final dateFormat = DateFormat('MMM dd, HH:mm:ss');
-    try {
-      final dt = DateTime.parse(timestamp);
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            dateFormat.format(dt),
-            style: const TextStyle(fontSize: 12),
-          ),
-        ],
-      );
-    } catch (e) {
-      return Text(timestamp);
-    }
-  }
-
-  Widget _buildLevelBadge(String level) {
-    final color = _getLevelColor(level);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        level,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Color _getLevelColor(String level) {
-    switch (level.toUpperCase()) {
-      case 'ERROR':
-        return AppColors.error;
-      case 'WARNING':
-        return AppColors.warning;
-      case 'INFO':
-        return AppColors.info;
-      case 'DEBUG':
-        return AppColors.success;
-      default:
-        return AppColors.textSecondary;
-    }
-  }
-
-  Widget _buildPagination(BuildContext context, LogsController controller) {
-    return Obx(() {
-      if (controller.logs.isEmpty) return const SizedBox.shrink();
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppConfig.padding, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primaryDark.withOpacity(0.5),
-        ),
-        child: Theme(
-          data: Theme.of(context).copyWith(
-            textTheme: Theme.of(context).textTheme.apply(bodyColor: AppColors.textLight, displayColor: AppColors.textLight),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Page size selector
-              Row(
-                children: [
-                  const Text('Rows per page:'),
-                  const SizedBox(width: 8),
-                  DropdownButton<int>(
-                    value: controller.pageSize.value,
-                    dropdownColor: AppColors.primaryDark,
-                    style: const TextStyle(color: AppColors.textOnPrimary),
-                    iconEnabledColor: AppColors.textLight,
-                    underline: const SizedBox(),
-                    items: controller.pageSizeOptions.map((size) {
-                      return DropdownMenuItem<int>(
-                        value: size,
-                        child: Text('$size', style: const TextStyle(color: AppColors.textOnPrimary)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        controller.changePageSize(value);
-                      }
-                    },
-                  ),
-                ],
-              ),
-              // Page info and navigation
-              Row(
-                children: [
-                  Text(
-                    'Page ${controller.currentPageNumber} of ${controller.totalPages}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textLight),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left, color: AppColors.textLight),
-                    onPressed:
-                        controller.hasPrevious ? controller.loadPreviousPage : null,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right, color: AppColors.textLight),
-                    onPressed: controller.hasMore ? controller.loadNextPage : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
 }

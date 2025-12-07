@@ -1,5 +1,5 @@
-import 'package:daily_task/app/constans/app_constants.dart';
-import 'package:daily_task/app/config/themes/app_theme.dart';
+import 'package:monitoring_app/app/constans/app_constants.dart';
+import 'package:monitoring_app/app/config/themes/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class SelectionButtonData {

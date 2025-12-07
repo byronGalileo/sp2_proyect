@@ -1,0 +1,30 @@
+# MongoDB dependencies for service monitoring logging system
+pymongo>=4.7.3
+dnspython>=2.3.0
+
+# Optional: For advanced MongoDB operations
+motor>=3.4.0  # Async MongoDB driver (if needed)
+
+# For environment variable management
+python-dotenv>=0.21.1
+
+# Logging and utilities (if not already included)
+colorlog>=6.9.0  # Colored logging output
+
+# API dependencies
+fastapi>=0.103.2
+uvicorn[standard]>=0.22.0
+pydantic>=1.10.24
+
+# Process management
+psutil>=5.9.0
+
+# AWS SDK for notifications (SNS for SMS, SES for email)
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Twilio SDK for SMS notifications
+twilio>=8.10.0
+
+# HTTP Client for WhatsApp integration
+requests>=2.31.0

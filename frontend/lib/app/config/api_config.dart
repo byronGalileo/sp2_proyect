@@ -1,7 +1,7 @@
 class ApiConfig {
   // Base URLs
-  static const String mainBaseUrl = 'http://192.168.3.93:8000'; // Your main API
-  static const String monitoringBaseUrl = 'http://192.168.3.93:8001'; // Monitoring API
+  static const String mainBaseUrl = 'http://localhost:8000'; // Your main API
+  static const String monitoringBaseUrl = 'http://localhost:8001'; // Monitoring API
 }
 
 class ApiEndpoints {
