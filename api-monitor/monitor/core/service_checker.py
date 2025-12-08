@@ -153,12 +153,29 @@ class ServiceChecker:
         user = ssh_config.get("user", "")
         port = ssh_config.get("port", 22)
         action = "restart" if target.recover_action == "restart" else "start"
-        base = "sudo systemctl" if target.use_sudo else "systemctl"
+        credentials = target.credentials
 
+        # Build the systemctl command to execute remotely
+        if target.use_sudo:
+            # Use sudo with credentials if available
+            if credentials.get("password"):
+                # Use sudo -S to read password from stdin
+                remote_cmd = (
+                    f"echo {shlex.quote(credentials['password'])} | "
+                    f"sudo -S systemctl {action} {shlex.quote(target.service)}"
+                )
+            else:
+                # Use sudo without password (assumes NOPASSWD in sudoers)
+                remote_cmd = f"sudo systemctl {action} {shlex.quote(target.service)}"
+        else:
+            # No sudo - try direct systemctl
+            remote_cmd = f"systemctl {action} {shlex.quote(target.service)}"
+
+        # Build the SSH command
         cmd = (
             f"ssh -p {port} -o BatchMode=yes -o StrictHostKeyChecking=accept-new "
             f"{shlex.quote(user)}@{shlex.quote(target.host)} "
-            f"{base} {action} {shlex.quote(target.service)}"
+            f"{shlex.quote(remote_cmd)}"
         )
 
         cp = self._shell(cmd, timeout=target.timeout_sec)
